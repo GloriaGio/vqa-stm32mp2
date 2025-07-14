@@ -59,10 +59,7 @@ def get_vqav2(dataset_path, train=True, keep_10ans=False, verbose=True):
 
 
 if __name__ == "__main__":
-    # dataset_path = Path.home() / "Desktop" / "VQA" / "vqa_dataset"
-    dataset_path = (
-        Path.home() / "Desktop" / "STMicroelectronics" / "VQA improved" / "vqa_dataset"
-    )
+    dataset_path = Path.home() / "Desktop" / "VQA" / "vqa_dataset"
     df_train = get_vqav2(dataset_path, train=True, keep_10ans=False, verbose=True)
     print("Columns: ", [i for i in df_train.columns])
     df_val = get_vqav2(dataset_path, train=False, keep_10ans=False, verbose=True)

@@ -1,9 +1,6 @@
 from tensorflow import keras
 import numpy as np
 
-# NOTA:
-# le immagini in input devono essere RGB (cv2 me le da in BRG) e sono scalate tra -1 e 1.
-
 # su STM32MP257F-EV1 impiega 151.3 ms da quantizzato.
 
 
