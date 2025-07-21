@@ -8,17 +8,15 @@ from dataset import get_vqav2
 from text_processing import Tokenizer, get_GloVe_emb
 from custom_generators import Custom_Generator
 from distiller import Distiller
-from vqa_models import MFB_Baseline
+from vqa_models import MFB_Baseline, MFB_Attention, MFB_CoAttention
 
 import argparse
 import pandas as pd
 import json
 from pathlib import Path
-import cv2
 from collections import Counter
 from sklearn.preprocessing import OneHotEncoder
 from matplotlib import pyplot as plt
-import seaborn as sns
 from sklearn.metrics import confusion_matrix
 import random
 from datetime import datetime
@@ -37,7 +35,7 @@ def get_args():
     parser = argparse.ArgumentParser("VQA model: training with knowledge distillation")
     parser.add_argument(
         "--net",
-        default='PROVA',
+        default='MFBCoAttention',
         type=str,
         #required=True,
         #choices=["tiny", "small", "big", "tinyCSA", "tinyCSA2"],
@@ -68,9 +66,8 @@ BS_SIZE = min(args.batch_size, config.BS_SIZE)
 
 # saving folder
 now = datetime.now().strftime("%y%m%d_%H%M")
-saving_folder = config.folder_path / f"KD_{which_net}_{now}"
+saving_folder = config.trained_models_path / f"KD_{which_net}_{now}"
 os.makedirs(saving_folder, exist_ok=True)
-
 
 #
 #
@@ -78,15 +75,28 @@ os.makedirs(saving_folder, exist_ok=True)
 
 ### DATA LOADING ###
 
-print("Loading the data...")
+# teacher answers
+answers_labels = {}
+with open(config.KD_path / "answer2label.txt", encoding='utf-8') as file:
+    for row in file:
+        diz = json.loads(row.strip())
+        answers_labels[diz['answer']] = diz['label']
+teach_ans = list(answers_labels.keys())
 
 # Training set
 df_train = get_vqav2(config.dataset_path, train=True, keep_10ans=False, verbose=True)
 
-# most frequent normalized answers 
-freq_ans = Counter(df_train["normalized_answer"]).most_common(config.num_classes)
-possible_ans = [ans for ans, _ in freq_ans]
-weight_dict = {ans: 1/freq for ans, freq in freq_ans}
+# most frequent normalized answers (that are also teacher answers)
+freq_ans = Counter(df_train["normalized_answer"]).most_common()
+possible_ans = []
+weight_dict = {}
+for ans, freq in freq_ans:
+    if ans in teach_ans:
+        possible_ans.append(ans)
+        weight_dict[ans] = 1/freq
+    if len(possible_ans) == config.num_classes:
+        break
+num_classes = len(possible_ans)
 
 # filtered dataset (most frequent answers only)
 df_train_filtered = df_train[df_train["normalized_answer"].isin(possible_ans)].copy()
@@ -115,7 +125,7 @@ print(
 ### DATA PROCESSING ###
 
 # Tokenizer
-with open(config.folder_path/"tokenizer_word_index.json", "r", encoding="utf-8") as file:
+with open(config.trained_models_path/"tokenizer_word_index.json", "r", encoding="utf-8") as file:
     word_index = json.load(file)
 tokenizer = Tokenizer(word_index=word_index, maxlen=config.maxlen)
 num_words = len(word_index)
@@ -138,17 +148,30 @@ possible_ans = (onehot_encoder.categories_[0]).tolist()
 with open(saving_folder/"possible_answers.json", "w") as f:
     json.dump(possible_ans, f)
 
-# correspondence between student and teacher answers indices
-answers_labels = {}
-with open(config.KD_path / "answer2label.txt", encoding='utf-8') as file:
-    for row in file:
-        diz = json.loads(row.strip())
-        answers_labels[diz['answer']] = diz['label']
+# saving config
+config_dict = {
+    "maxlen": config.maxlen,
+    "min_freq": config.min_freq,
+    "num_words": num_words,
+    "im_size": config.im_size,
+    "num_channels": config.num_channels,
+    "num_classes": num_classes,
+    "k": config.k,
+    "emb_dim": config.emb_dim,
+    "dropout_rate": config.dropout_rate,
+    "max_num_epochs": NUM_EPOCHS,
+    "learning_rate": LR,
+    "batch_size": BS_SIZE,
+    "alpha": config.ALPHA,
+    "temperature": config.TEMPERATURE
+}
+with open(saving_folder/"config.json", "w") as f:
+    json.dump(config_dict, f, indent=3)
 
+# correspondence between student and teacher answers indices
 teacher_indexes = []
 for a in possible_ans:
     teacher_indexes.append(answers_labels[a])
-
 
 # Train data loader
 train_data = Custom_Generator(
@@ -186,15 +209,16 @@ valid_data = Custom_Generator(
 
 
 ### MODEL ###
-model = MFB_Baseline(
+model = MFB_CoAttention(
     k=config.k,
+    num_glimps=config.num_glimps,
     maxlen=config.maxlen,
     num_words=num_words,
     emb_dim=config.emb_dim,
     glove_emb=glove_emb,
     im_size=config.im_size,
     num_channels=config.num_channels,
-    num_classes=config.num_classes,
+    num_classes=num_classes,
     dropout_rate=config.dropout_rate,
     last_softmax=False
 )
@@ -265,6 +289,11 @@ train_history = history.history
 with open(saving_folder / "training_history.json", "w") as f:
     json.dump(train_history, f)
 
+# updating config file
+config_dict['num_epochs'] = len(train_history['loss'])
+with open(saving_folder/"config.json", "w") as f:
+    json.dump(config_dict, f, indent=3)
+
 # model saving
 distiller.save_weights(saving_folder / "final_distiller.weights.h5")
 
@@ -275,15 +304,16 @@ model.compile(
 )
 model.save(saving_folder / "final_model.keras")
 
-model2 = MFB_Baseline(
+model2 = MFB_CoAttention(
     k=config.k,
+    num_glimps=config.num_glimps,
     maxlen=config.maxlen,
     num_words=num_words,
     emb_dim=config.emb_dim,
     glove_emb=glove_emb,
     im_size=config.im_size,
     num_channels=config.num_channels,
-    num_classes=config.num_classes,
+    num_classes=num_classes,
     dropout_rate=config.dropout_rate,
     last_softmax=False
 )

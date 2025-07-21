@@ -134,4 +134,4 @@ if __name__ == "__main__":
     tok.fit_on_texts(questions_list)
     print(tok.vocab_size)
 
-    tok.save_json(config.folder_path/"tokenizer_word_index.json")
+    tok.save_json(config.trained_models_path/"tokenizer_word_index.json")

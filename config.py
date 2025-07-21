@@ -10,6 +10,8 @@ dataset_path = path / "vqa_dataset"
 KD_path = path / "KD"
 # GloVe folder
 glove_path = path / "glove.6B"
+# trained models folder
+trained_models_path = path / "Trained_models"
 
 
 # input and output parameters
@@ -20,13 +22,14 @@ num_channels = 3  # image channels
 num_classes = 1000  # number of possible answers
 
 # net parameters
-k = 2
-emb_dim = 50
+k = 5
+num_glimps = 2
+emb_dim = 100
 dropout_rate = 0
 
 # training parameters
-NUM_EPOCHS = 2 #100  # epochs number
-LR = 0.001  # learning rate
+NUM_EPOCHS = 100  # epochs number
+LR = 0.0001  # learning rate
 BS_SIZE = 32  # batch size
 
 # knowledge distillation parameters

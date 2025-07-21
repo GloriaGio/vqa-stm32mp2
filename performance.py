@@ -10,12 +10,6 @@ from pathlib import Path
 import json
 
 
-def vqa_accuracy(model_ans, list_10ans):
-    count = 0
-    for i in range(len(model_ans)):
-        count += min(list_10ans[i].count(model_ans[i]) / 3.0, 1.0)
-    return count / len(model_ans)
-
 def get_args():
     parser = argparse.ArgumentParser("VQA model: computing accuracy")
     parser.add_argument(
@@ -33,23 +27,46 @@ def get_args():
     return parser.parse_args()
 
 
+def vqa_accuracy(model_ans, list_10ans):
+    count = 0
+    for i in range(len(model_ans)):
+        count += min(list_10ans[i].count(model_ans[i]) / 3.0, 1.0)
+    return count / len(model_ans)
+
+
+def get_vqa_accuracy(model, dataloader, possible_ans, gt_10ans):
+    model_ans = []
+    for i in range(len(dataloader)):
+        batch_input, _, _ = dataloader[i]
+        pred = model.predict(batch_input, verbose=0)
+        ans_idx = pred.argmax(axis=-1)
+        batch_ans = [possible_ans[idx] for idx in ans_idx]
+        model_ans += batch_ans
+
+    accuracy = vqa_accuracy(model_ans, gt_10ans)
+    return accuracy
+
+
+
+
 if __name__ == "__main__":
 
     args = get_args()
     BS_SIZE = min(args.batch_size, config.BS_SIZE)
-    saving_folder = config.folder_path / args.folder
+    saving_folder = config.trained_models_path / args.folder
 
     dataset_path = config.dataset_path
 
     ### DATA LOADING ###
 
     df_train = get_vqav2(dataset_path, train=True, keep_10ans=True, verbose=True)
-    df_train = df_train[:5000]
+    train_10ans = list(df_train["normalized_10answers"])
+
     df_val = get_vqav2(dataset_path, train=False, keep_10ans=True, verbose=True)
-    df_val = df_val[:5000]
+    val_10ans = list(df_val["normalized_10answers"])
 
     # Tokenizer
-    with open(config.folder_path/"tokenizer_word_index.json", "r", encoding="utf-8") as file:
+    with open(config.trained_models_path/"tokenizer_word_index.json", "r", encoding="utf-8") as file:
         word_index = json.load(file)
     tokenizer = Tokenizer(word_index=word_index, maxlen=config.maxlen)
     num_words = len(word_index)
@@ -83,7 +100,7 @@ if __name__ == "__main__":
     # possible answers
     with open(saving_folder/"possible_answers.json", "r", encoding="utf-8") as file:
         possible_ans = json.load(file)
-
+    
     # models
     final_model = keras.models.load_model(saving_folder / "final_model.keras")
     try:
@@ -91,50 +108,29 @@ if __name__ == "__main__":
     except:
         best_model = None
 
+    performance = {}
+
+    # final model, all answers
     final_model_perf = {}
-
-    # final model on train set
-    train_pred = final_model.predict(train_data)
-    train_ans_idx = train_pred.argmax(axis=-1)
-    train_ans = [possible_ans[idx] for idx in train_ans_idx]
-
-    train_10ans = list(df_train["normalized_10answers"])
-    final_model_perf['train_accuracy'] =  vqa_accuracy(train_ans, train_10ans)
-
-    # final model on val set
-    val_pred = final_model.predict(valid_data)
-    val_ans_idx = val_pred.argmax(axis=-1)
-    val_ans = [possible_ans[idx] for idx in val_ans_idx]
-
-    val_10ans = list(df_val["normalized_10answers"])
-    final_model_perf['val_accuracy'] =  vqa_accuracy(val_ans, val_10ans)
-
     print("Final model:")
-    print(f"- Train Accuracy: {final_model_perf['train_accuracy']*100:.2f} %, Val Accuracy: {final_model_perf['val_accuracy']*100:.2f} %")
+    final_model_perf['train_accuracy'] = get_vqa_accuracy(final_model, train_data, possible_ans, train_10ans)
+    print(f"Train Accuracy: {final_model_perf['train_accuracy']*100:.2f} %")
+    final_model_perf['val_accuracy'] = get_vqa_accuracy(final_model, valid_data, possible_ans, val_10ans)
+    print(f"Val Accuracy: {final_model_perf['val_accuracy']*100:.2f} %")
 
+    performance['final_model'] = final_model_perf
+
+    # best model, all answers
     if best_model is not None:
         best_model_perf = {}
-
-        # best model on train set
-        train_pred = best_model.predict(train_data)
-        train_ans_idx = train_pred.argmax(axis=-1)
-        train_ans = [possible_ans[idx] for idx in train_ans_idx]
-
-        best_model_perf['train_accuracy'] =  vqa_accuracy(train_ans, train_10ans)
-
-        # bets model on val set
-        val_pred = best_model.predict(valid_data)
-        val_ans_idx = val_pred.argmax(axis=-1)
-        val_ans = [possible_ans[idx] for idx in val_ans_idx]
-
-        best_model_perf['val_accuracy'] =  vqa_accuracy(val_ans, val_10ans)
-
         print("Best model:")
-        print(f"- Train Accuracy: {best_model_perf['train_accuracy']*100:.2f} %, Val Accuracy: {best_model_perf['val_accuracy']*100:.2f} %")
+        best_model_perf['train_accuracy'] = get_vqa_accuracy(best_model, train_data, possible_ans, train_10ans)
+        print(f"Train Accuracy: {best_model_perf['train_accuracy']*100:.2f} %")
+        best_model_perf['val_accuracy'] = get_vqa_accuracy(best_model, valid_data, possible_ans, val_10ans)
+        print(f"Val Accuracy: {best_model_perf['val_accuracy']*100:.2f} %")
 
-performance = {
-    'final_model': final_model_perf,
-    'best_model': best_model_perf
-}
-with open(saving_folder / "accuracy.json", "w") as file:
-    json.dump(performance, file)
+        performance['best_model'] = best_model_perf
+    
+
+    with open(saving_folder / "accuracy.json", "w") as file:
+        json.dump(performance, file)
