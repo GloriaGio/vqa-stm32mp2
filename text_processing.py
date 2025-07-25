@@ -80,6 +80,9 @@ class Tokenizer:
                 else:
                     seq = seq[: self.maxlen]
             sequences.append(seq)
+
+        if self.maxlen is None:
+            return sequences
         return np.array(sequences, dtype=dtype)
 
     def save_json(self, saving_path):
