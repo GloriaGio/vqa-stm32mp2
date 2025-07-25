@@ -47,8 +47,6 @@ def get_vqa_accuracy(model, dataloader, possible_ans, gt_10ans):
     return accuracy
 
 
-
-
 if __name__ == "__main__":
 
     args = get_args()
@@ -66,14 +64,16 @@ if __name__ == "__main__":
     val_10ans = list(df_val["normalized_10answers"])
 
     # Tokenizer
-    with open(config.trained_models_path/"tokenizer_word_index.json", "r", encoding="utf-8") as file:
+    with open(
+        config.trained_models_path / "tokenizer_word_index.json", "r", encoding="utf-8"
+    ) as file:
         word_index = json.load(file)
     tokenizer = Tokenizer(word_index=word_index, maxlen=config.maxlen)
     num_words = len(word_index)
-    
+
     # Train data loader
     train_data = Custom_Generator(
-        df_train, 
+        df_train,
         config.dataset_path,
         tokenizer,
         onehot_encoder=None,
@@ -98,9 +98,9 @@ if __name__ == "__main__":
     )
 
     # possible answers
-    with open(saving_folder/"possible_answers.json", "r", encoding="utf-8") as file:
+    with open(saving_folder / "possible_answers.json", "r", encoding="utf-8") as file:
         possible_ans = json.load(file)
-    
+
     # models
     final_model = keras.models.load_model(saving_folder / "final_model.keras")
     try:
@@ -113,24 +113,31 @@ if __name__ == "__main__":
     # final model, all answers
     final_model_perf = {}
     print("Final model:")
-    final_model_perf['train_accuracy'] = get_vqa_accuracy(final_model, train_data, possible_ans, train_10ans)
+    final_model_perf["train_accuracy"] = get_vqa_accuracy(
+        final_model, train_data, possible_ans, train_10ans
+    )
     print(f"Train Accuracy: {final_model_perf['train_accuracy']*100:.2f} %")
-    final_model_perf['val_accuracy'] = get_vqa_accuracy(final_model, valid_data, possible_ans, val_10ans)
+    final_model_perf["val_accuracy"] = get_vqa_accuracy(
+        final_model, valid_data, possible_ans, val_10ans
+    )
     print(f"Val Accuracy: {final_model_perf['val_accuracy']*100:.2f} %")
 
-    performance['final_model'] = final_model_perf
+    performance["final_model"] = final_model_perf
 
     # best model, all answers
     if best_model is not None:
         best_model_perf = {}
         print("Best model:")
-        best_model_perf['train_accuracy'] = get_vqa_accuracy(best_model, train_data, possible_ans, train_10ans)
+        best_model_perf["train_accuracy"] = get_vqa_accuracy(
+            best_model, train_data, possible_ans, train_10ans
+        )
         print(f"Train Accuracy: {best_model_perf['train_accuracy']*100:.2f} %")
-        best_model_perf['val_accuracy'] = get_vqa_accuracy(best_model, valid_data, possible_ans, val_10ans)
+        best_model_perf["val_accuracy"] = get_vqa_accuracy(
+            best_model, valid_data, possible_ans, val_10ans
+        )
         print(f"Val Accuracy: {best_model_perf['val_accuracy']*100:.2f} %")
 
-        performance['best_model'] = best_model_perf
-    
+        performance["best_model"] = best_model_perf
 
     with open(saving_folder / "accuracy.json", "w") as file:
         json.dump(performance, file)

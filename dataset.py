@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import pandas as pd
 from glossary import normalize_word
+import config
 
 
 def get_image_name(image_id, which_set="train2014"):
@@ -59,8 +60,9 @@ def get_vqav2(dataset_path, train=True, keep_10ans=False, verbose=True):
 
 
 if __name__ == "__main__":
-    dataset_path = Path.home() / "Desktop" / "VQA" / "vqa_dataset"
-    df_train = get_vqav2(dataset_path, train=True, keep_10ans=False, verbose=True)
+    df_train = get_vqav2(
+        config.dataset_path, train=True, keep_10ans=False, verbose=True
+    )
     print("Columns: ", [i for i in df_train.columns])
-    df_val = get_vqav2(dataset_path, train=False, keep_10ans=False, verbose=True)
+    df_val = get_vqav2(config.dataset_path, train=False, keep_10ans=False, verbose=True)
     print("Columns: ", [i for i in df_val.columns])

@@ -1,6 +1,7 @@
 from tensorflow import keras
 import numpy as np
 
+
 # su STM32MP257F-EV1 impiega 151.3 ms da quantizzato.
 def MFB_Baseline(
     k=5,
@@ -86,7 +87,9 @@ def MFB_Baseline(
     fus_mfb = keras.layers.Multiply()([q_mfb, im_mfb])
     fus_mfb = keras.layers.Dropout(dropout_rate)(fus_mfb)
     fus_mfb = keras.layers.Reshape((-1, 1))(fus_mfb)
-    fus_mfb = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(fus_mfb)
+    fus_mfb = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(
+        fus_mfb
+    )
     fus_mfb = keras.layers.Reshape((-1,))(fus_mfb)
     # no pow norm
     fus_mfb = keras.layers.UnitNormalization(axis=-1)(fus_mfb)
@@ -106,9 +109,6 @@ def MFB_Baseline(
     model = keras.models.Model(inputs=[text_input, image_input], outputs=outputs)
 
     return model
-
-
-
 
 
 def MFB_Attention(
@@ -176,7 +176,7 @@ def MFB_Attention(
 
     q_feat = keras.layers.Concatenate(axis=-1)([q_feat1, q_feat2])
     q_feat = keras.layers.GlobalAveragePooling1D()(q_feat)
-        
+
     # Image Feature Extraction
     mobilenet_base = keras.applications.MobileNetV3Large(
         include_top=False,
@@ -190,18 +190,30 @@ def MFB_Attention(
 
     # MFB pooling 1
     q_mfb1 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(q_feat)
-    q_mfb1 = keras.layers.Reshape((1,1,-1))(q_mfb1)
-    im_mfb1 = keras.layers.Conv2D(1024 * k, 1, padding='same', kernel_initializer="he_normal")(im_feat)
+    q_mfb1 = keras.layers.Reshape((1, 1, -1))(q_mfb1)
+    im_mfb1 = keras.layers.Conv2D(
+        1024 * k, 1, padding="same", kernel_initializer="he_normal"
+    )(im_feat)
     fus_mfb1 = keras.layers.Multiply()([q_mfb1, im_mfb1])
     fus_mfb1 = keras.layers.Dropout(dropout_rate)(fus_mfb1)
     fus_mfb1 = keras.layers.Reshape((-1, 1))(fus_mfb1)
-    fus_mfb1 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(fus_mfb1)
-    fus_mfb1 = keras.layers.Reshape((7,7,-1,))(fus_mfb1)
+    fus_mfb1 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(
+        fus_mfb1
+    )
+    fus_mfb1 = keras.layers.Reshape(
+        (
+            7,
+            7,
+            -1,
+        )
+    )(fus_mfb1)
     # no pow norm
     fus_mfb1 = keras.layers.UnitNormalization(axis=-1)(fus_mfb1)
 
     # Image Attention
-    im_att1 = keras.layers.Conv2D(256, 1, padding='same', kernel_initializer="he_normal")(fus_mfb1)
+    im_att1 = keras.layers.Conv2D(
+        256, 1, padding="same", kernel_initializer="he_normal"
+    )(fus_mfb1)
     im_att1 = keras.layers.ReLU()(im_att1)
     for i in range(num_glimps):
         im_att2 = keras.layers.Conv2D(
@@ -222,7 +234,9 @@ def MFB_Attention(
     fus_mfb2 = keras.layers.Multiply()([q_mfb2, im_mfb2])
     fus_mfb2 = keras.layers.Dropout(dropout_rate)(fus_mfb2)
     fus_mfb2 = keras.layers.Reshape((-1, 1))(fus_mfb2)
-    fus_mfb2 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(fus_mfb2)
+    fus_mfb2 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(
+        fus_mfb2
+    )
     fus_mfb2 = keras.layers.Reshape((-1,))(fus_mfb2)
     # no pow norm
     fus_mfb2 = keras.layers.UnitNormalization(axis=-1)(fus_mfb2)
@@ -237,14 +251,11 @@ def MFB_Attention(
         outputs = keras.layers.Dense(num_classes, activation="softmax")(fus_feat)
     else:
         outputs = keras.layers.Dense(num_classes)(fus_feat)
-    
+
     # Output
     model = keras.models.Model(inputs=[text_input, image_input], outputs=outputs)
 
     return model
-
-
-
 
 
 def MFB_CoAttention(
@@ -329,7 +340,7 @@ def MFB_CoAttention(
             q_att = q_att2
         else:
             q_att = keras.layers.Concatenate(axis=-1)([q_att, q_att2])
-        
+
     # Image Feature Extraction
     mobilenet_base = keras.applications.MobileNetV3Large(
         include_top=False,
@@ -343,18 +354,30 @@ def MFB_CoAttention(
 
     # MFB pooling 1
     q_mfb1 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(q_att)
-    q_mfb1 = keras.layers.Reshape((1,1,-1))(q_mfb1)
-    im_mfb1 = keras.layers.Conv2D(1024 * k, 1, padding='same', kernel_initializer="he_normal")(im_feat)
+    q_mfb1 = keras.layers.Reshape((1, 1, -1))(q_mfb1)
+    im_mfb1 = keras.layers.Conv2D(
+        1024 * k, 1, padding="same", kernel_initializer="he_normal"
+    )(im_feat)
     fus_mfb1 = keras.layers.Multiply()([q_mfb1, im_mfb1])
     fus_mfb1 = keras.layers.Dropout(dropout_rate)(fus_mfb1)
     fus_mfb1 = keras.layers.Reshape((-1, 1))(fus_mfb1)
-    fus_mfb1 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(fus_mfb1)
-    fus_mfb1 = keras.layers.Reshape((7,7,-1,))(fus_mfb1)
+    fus_mfb1 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(
+        fus_mfb1
+    )
+    fus_mfb1 = keras.layers.Reshape(
+        (
+            7,
+            7,
+            -1,
+        )
+    )(fus_mfb1)
     # no pow norm
     fus_mfb1 = keras.layers.UnitNormalization(axis=-1)(fus_mfb1)
 
     # Image Attention
-    im_att1 = keras.layers.Conv2D(256, 1, padding='same', kernel_initializer="he_normal")(fus_mfb1)
+    im_att1 = keras.layers.Conv2D(
+        256, 1, padding="same", kernel_initializer="he_normal"
+    )(fus_mfb1)
     im_att1 = keras.layers.ReLU()(im_att1)
     for i in range(num_glimps):
         im_att2 = keras.layers.Conv2D(
@@ -375,7 +398,9 @@ def MFB_CoAttention(
     fus_mfb2 = keras.layers.Multiply()([q_mfb2, im_mfb2])
     fus_mfb2 = keras.layers.Dropout(dropout_rate)(fus_mfb2)
     fus_mfb2 = keras.layers.Reshape((-1, 1))(fus_mfb2)
-    fus_mfb2 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(fus_mfb2)
+    fus_mfb2 = keras.layers.AveragePooling1D(pool_size=k, strides=k, padding="same")(
+        fus_mfb2
+    )
     fus_mfb2 = keras.layers.Reshape((-1,))(fus_mfb2)
     # no pow norm
     fus_mfb2 = keras.layers.UnitNormalization(axis=-1)(fus_mfb2)
@@ -390,14 +415,11 @@ def MFB_CoAttention(
         outputs = keras.layers.Dense(num_classes, activation="softmax")(fus_feat)
     else:
         outputs = keras.layers.Dense(num_classes)(fus_feat)
-    
+
     # Output
     model = keras.models.Model(inputs=[text_input, image_input], outputs=outputs)
 
     return model
-
-
-
 
 
 if __name__ == "__main__":

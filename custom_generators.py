@@ -46,20 +46,22 @@ class Custom_Generator(keras.utils.Sequence):
         return (np.ceil(self.datalen / float(self.batch_size))).astype(int)
 
     def __getitem__(self, idx):
-        batch_indexes = self.indexes[idx * self.batch_size : (idx + 1) * self.batch_size]
+        batch_indexes = self.indexes[
+            idx * self.batch_size : (idx + 1) * self.batch_size
+        ]
         batch_df = self.dataframe.iloc[batch_indexes]
 
-        # weights 
+        # weights
         if self.sample_weights:
-            batch_w = np.array(batch_df['weight'], dtype=np.float32)
+            batch_w = np.array(batch_df["weight"], dtype=np.float32)
         else:
             batch_w = np.ones(len(batch_df))
 
         # questions
-        batch_q = self.tokenizer.texts_to_sequences(batch_df['question'])
+        batch_q = self.tokenizer.texts_to_sequences(batch_df["question"])
 
         # images
-        im_names = list(batch_df['image_name'])
+        im_names = list(batch_df["image_name"])
         if "train2014" in im_names[0]:
             direct = "train2014"
         else:
@@ -85,7 +87,7 @@ class Custom_Generator(keras.utils.Sequence):
             return (batch_q, batch_im), batch_gt, batch_w
 
         # onehot encoding
-        batch_gt = list(batch_df['normalized_answer'])
+        batch_gt = list(batch_df["normalized_answer"])
         batch_gt = np.reshape(np.array(batch_gt), (-1, 1))
         batch_gt = self.onehot_encoder.transform(batch_gt)
 
@@ -93,17 +95,17 @@ class Custom_Generator(keras.utils.Sequence):
             return (batch_q, batch_im), batch_gt, batch_w
 
         # logits
-        questions_id = batch_df['question_id']
+        questions_id = batch_df["question_id"]
         logits = []
         for q_id in questions_id:
-            logits_file = str(q_id) + '.json'
+            logits_file = str(q_id) + ".json"
             with open(self.logits_path / logits_file, "r") as file:
                 logits_dict = json.load(file)
-                logits.append(logits_dict['logits'])
+                logits.append(logits_dict["logits"])
         logits = np.array(logits, dtype=np.float32)
         logits = logits[:, self.indexes_to_consider]
 
-        return (batch_q, batch_im), (batch_gt,  logits), batch_w
+        return (batch_q, batch_im), (batch_gt, logits), batch_w
 
     def on_epoch_end(self):
         self.indexes = np.arange(self.datalen)

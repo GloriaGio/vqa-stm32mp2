@@ -31,14 +31,15 @@ import numpy as np
 #
 #
 
+
 def get_args():
     parser = argparse.ArgumentParser("VQA model: training with knowledge distillation")
     parser.add_argument(
         "--net",
-        default='MFBCoAttention',
+        default="MFBCoAttention",
         type=str,
-        #required=True,
-        #choices=["tiny", "small", "big", "tinyCSA", "tinyCSA2"],
+        # required=True,
+        # choices=["tiny", "small", "big", "tinyCSA", "tinyCSA2"],
         help="Which net to use",
     )
     parser.add_argument(
@@ -77,10 +78,10 @@ os.makedirs(saving_folder, exist_ok=True)
 
 # teacher answers
 answers_labels = {}
-with open(config.KD_path / "answer2label.txt", encoding='utf-8') as file:
+with open(config.KD_path / "answer2label.txt", encoding="utf-8") as file:
     for row in file:
         diz = json.loads(row.strip())
-        answers_labels[diz['answer']] = diz['label']
+        answers_labels[diz["answer"]] = diz["label"]
 teach_ans = list(answers_labels.keys())
 
 # Training set
@@ -93,14 +94,16 @@ weight_dict = {}
 for ans, freq in freq_ans:
     if ans in teach_ans:
         possible_ans.append(ans)
-        weight_dict[ans] = 1/freq
+        weight_dict[ans] = 1 / freq
     if len(possible_ans) == config.num_classes:
         break
 num_classes = len(possible_ans)
 
 # filtered dataset (most frequent answers only)
 df_train_filtered = df_train[df_train["normalized_answer"].isin(possible_ans)].copy()
-df_train_filtered['weight'] = df_train_filtered["normalized_answer"].apply(lambda x: weight_dict[x])
+df_train_filtered["weight"] = df_train_filtered["normalized_answer"].apply(
+    lambda x: weight_dict[x]
+)
 
 print(
     f"Number of training samples after filtering: {len(df_train_filtered)} ({len(df_train_filtered)/len(df_train)*100: .2f} % )"
@@ -111,7 +114,9 @@ df_val = get_vqav2(config.dataset_path, train=False, keep_10ans=False, verbose=T
 
 # filtered dataset
 df_val_filtered = df_val[df_val["normalized_answer"].isin(possible_ans)].copy()
-df_val_filtered['weight'] = df_val_filtered["normalized_answer"].apply(lambda x: weight_dict[x])
+df_val_filtered["weight"] = df_val_filtered["normalized_answer"].apply(
+    lambda x: weight_dict[x]
+)
 
 print(
     f"Number of validation samples after filtering: {len(df_val_filtered)} ({len(df_val_filtered)/len(df_val)*100: .2f} % )"
@@ -125,27 +130,29 @@ print(
 ### DATA PROCESSING ###
 
 # Tokenizer
-with open(config.trained_models_path/"tokenizer_word_index.json", "r", encoding="utf-8") as file:
+with open(
+    config.trained_models_path / "tokenizer_word_index.json", "r", encoding="utf-8"
+) as file:
     word_index = json.load(file)
 tokenizer = Tokenizer(word_index=word_index, maxlen=config.maxlen)
 num_words = len(word_index)
 
 # GloVe embedding
 glove_emb, _ = get_GloVe_emb(
-    config.glove_path,
-    dim=config.emb_dim,
-    word_index=word_index
+    config.glove_path, dim=config.emb_dim, word_index=word_index
 )
 
 # Onehot encoding
 list_train_gt = list(df_train_filtered["normalized_answer"])
 train_gt = np.reshape(np.array(list_train_gt), (-1, 1))
-onehot_encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore", dtype=np.float32)
+onehot_encoder = OneHotEncoder(
+    sparse_output=False, handle_unknown="ignore", dtype=np.float32
+)
 onehot_encoder.fit(train_gt)
 
 # saving ordered possible answers
 possible_ans = (onehot_encoder.categories_[0]).tolist()
-with open(saving_folder/"possible_answers.json", "w") as f:
+with open(saving_folder / "possible_answers.json", "w") as f:
     json.dump(possible_ans, f)
 
 # saving config
@@ -163,9 +170,9 @@ config_dict = {
     "learning_rate": LR,
     "batch_size": BS_SIZE,
     "alpha": config.ALPHA,
-    "temperature": config.TEMPERATURE
+    "temperature": config.TEMPERATURE,
 }
-with open(saving_folder/"config.json", "w") as f:
+with open(saving_folder / "config.json", "w") as f:
     json.dump(config_dict, f, indent=3)
 
 # correspondence between student and teacher answers indices
@@ -175,11 +182,11 @@ for a in possible_ans:
 
 # Train data loader
 train_data = Custom_Generator(
-    df_train_filtered, 
+    df_train_filtered,
     config.dataset_path,
     tokenizer,
     onehot_encoder,
-    logits_path=config.KD_path/"train_logits",
+    logits_path=config.KD_path / "train_logits",
     indexes_to_consider=teacher_indexes,
     im_size=config.im_size,
     num_channels=config.num_channels,
@@ -194,8 +201,8 @@ valid_data = Custom_Generator(
     config.dataset_path,
     tokenizer,
     onehot_encoder,
-    logits_path=config.KD_path/"val_logits",
-    indexes_to_consider=teacher_indexes,    
+    logits_path=config.KD_path / "val_logits",
+    indexes_to_consider=teacher_indexes,
     im_size=config.im_size,
     num_channels=config.num_channels,
     sample_weights=True,
@@ -220,11 +227,11 @@ model = MFB_CoAttention(
     num_channels=config.num_channels,
     num_classes=num_classes,
     dropout_rate=config.dropout_rate,
-    last_softmax=False
+    last_softmax=False,
 )
 
-print('Number of parameters:', model.count_params())
-#print(model.summary())
+print("Number of parameters:", model.count_params())
+# print(model.summary())
 
 #
 #
@@ -235,8 +242,13 @@ print('Number of parameters:', model.count_params())
 
 distiller = Distiller(student=model)
 
-dummy_image = np.random.randint(0, 256, (1,config.im_size,config.im_size,config.num_channels))/255*2-1
-dummy_answer = np.random.randint(0, num_words, (1,config.maxlen))
+dummy_image = (
+    np.random.randint(0, 256, (1, config.im_size, config.im_size, config.num_channels))
+    / 255
+    * 2
+    - 1
+)
+dummy_answer = np.random.randint(0, num_words, (1, config.maxlen))
 _ = distiller.predict((dummy_answer, dummy_image))
 
 distiller.compile(
@@ -245,7 +257,7 @@ distiller.compile(
     student_loss_fn=keras.losses.CategoricalCrossentropy(from_logits=False),
     distillation_loss_fn=keras.losses.KLDivergence(),
     alpha=config.ALPHA,
-    temperature=config.TEMPERATURE
+    temperature=config.TEMPERATURE,
 )
 
 callbacks = [
@@ -265,16 +277,13 @@ callbacks = [
         factor=0.5,
         patience=3,
         # cooldown=2,
-        min_lr=5e-5, 
+        min_lr=5e-5,
         verbose=0,
     ),
 ]
 
 history = distiller.fit(
-    train_data, 
-    validation_data=valid_data, 
-    epochs=NUM_EPOCHS, 
-    callbacks=callbacks
+    train_data, validation_data=valid_data, epochs=NUM_EPOCHS, callbacks=callbacks
 )
 
 #
@@ -290,8 +299,8 @@ with open(saving_folder / "training_history.json", "w") as f:
     json.dump(train_history, f)
 
 # updating config file
-config_dict['num_epochs'] = len(train_history['loss'])
-with open(saving_folder/"config.json", "w") as f:
+config_dict["num_epochs"] = len(train_history["loss"])
+with open(saving_folder / "config.json", "w") as f:
     json.dump(config_dict, f, indent=3)
 
 # model saving
@@ -315,7 +324,7 @@ model2 = MFB_CoAttention(
     num_channels=config.num_channels,
     num_classes=num_classes,
     dropout_rate=config.dropout_rate,
-    last_softmax=False
+    last_softmax=False,
 )
 distiller2 = Distiller(student=model2)
 _ = distiller2.predict((dummy_answer, dummy_image))
@@ -336,26 +345,26 @@ model2.save(saving_folder / "best_model.keras")
 if True:
 
     train_data = Custom_Generator(
-    df_train_filtered, 
-    config.dataset_path,
-    tokenizer,
-    onehot_encoder,
-    im_size=config.im_size,
-    num_channels=config.num_channels,
-    sample_weights=True,
-    batch_size=BS_SIZE,
-    shuffle=False,
+        df_train_filtered,
+        config.dataset_path,
+        tokenizer,
+        onehot_encoder,
+        im_size=config.im_size,
+        num_channels=config.num_channels,
+        sample_weights=True,
+        batch_size=BS_SIZE,
+        shuffle=False,
     )
     valid_data = Custom_Generator(
-    df_val_filtered,
-    config.dataset_path,
-    tokenizer,
-    onehot_encoder,  
-    im_size=config.im_size,
-    num_channels=config.num_channels,
-    sample_weights=True,
-    batch_size=BS_SIZE,
-    shuffle=False,
+        df_val_filtered,
+        config.dataset_path,
+        tokenizer,
+        onehot_encoder,
+        im_size=config.im_size,
+        num_channels=config.num_channels,
+        sample_weights=True,
+        batch_size=BS_SIZE,
+        shuffle=False,
     )
 
     final_model = keras.models.load_model(saving_folder / "final_model.keras")
@@ -375,9 +384,11 @@ if True:
         "val_loss": final_val_loss,
         "val_accuracy": final_val_accuracy,
     }
-    
+
     print("Final model:")
-    print(f'- Train Accuracy: {final_train_accuracy*100:.2f} %, Val Accuracy: {final_val_accuracy*100:.2f} %')
+    print(
+        f"- Train Accuracy: {final_train_accuracy*100:.2f} %, Val Accuracy: {final_val_accuracy*100:.2f} %"
+    )
 
     if best_model is not None:
         best_train_loss, best_train_accuracy = best_model.evaluate(train_data)
@@ -389,7 +400,9 @@ if True:
             "val_accuracy": best_val_accuracy,
         }
         print("Best model:")
-        print(f'- Train Accuracy: {best_train_accuracy*100:.2f} %, Val Accuracy: {best_val_accuracy*100:.2f} %')
+        print(
+            f"- Train Accuracy: {best_train_accuracy*100:.2f} %, Val Accuracy: {best_val_accuracy*100:.2f} %"
+        )
 
     with open(saving_folder / "performance.json", "w") as file:
         json.dump(performance, file)

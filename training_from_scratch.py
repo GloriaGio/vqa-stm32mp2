@@ -6,7 +6,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 from dataset import get_vqav2_training
 from dataset import get_vqav2_validation
 from vqa_models import get_net
-from excluded_answers import get_excluded_answers
 from custom_generators import Custom_Generator
 
 import argparse
@@ -64,9 +63,7 @@ which_net = args.net
 # project folder
 path = Path.home() / "Desktop" / "VQA" / "VQAforMCUs"
 # dataset folder
-dataset_path = (
-    Path.home() / "Desktop" / "VQA" / "vqa_dataset"
-)
+dataset_path = Path.home() / "Desktop" / "VQA" / "vqa_dataset"
 # saving folder
 now = datetime.now().strftime("%m_%d_%H_%M")
 saving_folder = path / f"{which_net}_VQAmodel_{now}"
@@ -217,7 +214,7 @@ model = get_net(
     num_channels=num_channels,
     num_classes=num_classes,
     dropout_rate=DROPOUT_RATE,
-    last_softmax=False
+    last_softmax=False,
 )
 
 # model.summary()
@@ -312,9 +309,11 @@ if True:
         "val_loss": final_val_loss,
         "val_accuracy": final_val_accuracy,
     }
-    
+
     print("Final model:")
-    print(f'- Train Accuracy: {final_train_accuracy*100:.2f} %, Val Accuracy: {final_val_accuracy*100:.2f} %')
+    print(
+        f"- Train Accuracy: {final_train_accuracy*100:.2f} %, Val Accuracy: {final_val_accuracy*100:.2f} %"
+    )
 
     if best_model is not None:
         best_train_loss, best_train_accuracy = best_model.evaluate(train_data)
@@ -326,7 +325,9 @@ if True:
             "val_accuracy": best_val_accuracy,
         }
         print("Best model:")
-        print(f'- Train Accuracy: {best_train_accuracy*100:.2f} %, Val Accuracy: {best_val_accuracy*100:.2f} %')
+        print(
+            f"- Train Accuracy: {best_train_accuracy*100:.2f} %, Val Accuracy: {best_val_accuracy*100:.2f} %"
+        )
 
     with open(saving_folder / "performance.json", "w") as file:
         json.dump(performance, file)
