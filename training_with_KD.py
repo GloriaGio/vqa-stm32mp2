@@ -39,7 +39,7 @@ def get_args():
         default="MFBCoAttention",
         type=str,
         # required=True,
-        # choices=["tiny", "small", "big", "tinyCSA", "tinyCSA2"],
+        choices=["MFBBaseline", "MFBAttention", "MFBCoAttention"],
         help="Which net to use",
     )
     parser.add_argument(
@@ -172,6 +172,8 @@ config_dict = {
     "alpha": config.ALPHA,
     "temperature": config.TEMPERATURE,
 }
+if "Attention" in which_net:
+    config_dict["num_glimps"] = config.num_glimps
 with open(saving_folder / "config.json", "w") as f:
     json.dump(config_dict, f, indent=3)
 
