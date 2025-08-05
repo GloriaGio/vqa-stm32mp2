@@ -1,7 +1,7 @@
 import config
-from dataset import get_vqav2
-from text_processing import Tokenizer
-from custom_generators import Custom_Generator
+from data.dataset import get_vqav2
+from data.text_processing import Tokenizer
+from data.custom_generators import Custom_Generator
 
 from tensorflow import keras
 import numpy as np

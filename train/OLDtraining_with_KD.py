@@ -4,11 +4,11 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import config
-from dataset import get_vqav2
-from text_processing import Tokenizer, get_GloVe_emb
-from custom_generators import Custom_Generator
-from distiller import Distiller
-from vqa_models import MFB_Baseline, MFB_Attention, MFB_CoAttention
+from data.dataset import get_vqav2
+from data.text_processing import Tokenizer, get_GloVe_emb
+from data.custom_generators import Custom_Generator
+from models.distiller import Distiller
+from models.vqa_models import MFB_Baseline, MFB_Attention, MFB_CoAttention
 
 import argparse
 import pandas as pd

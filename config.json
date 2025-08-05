@@ -1,0 +1,32 @@
+{
+    "seed": 1,
+    "model": 
+    {
+        "max_length": 15,
+        "num_vocab_words": -1,
+        "min_frequency": 5,
+        "image_size": 224,
+        "num_channels": 3,
+        "num_classes": 1000,
+        "k_window": 5,
+        "output_MFB": 1024,
+        "num_attention_glimps": 2,
+        "embedding_dim": 100,
+        "dropout_rate": 0
+    },
+    "training": 
+    {
+        "num_epochs": 10,
+        "lr": 0.0001,
+        "batch_size": 32,
+        "alpha": 0.1,
+        "temperature": 3
+    },
+    "paths":
+    {
+        "dataset_path": "/Users/glori/Desktop/STMicroelectronics/VQA improved/vqa_dataset",
+        "glove_path": "/Users/glori/Desktop/STMicroelectronics/prove VQA torch/glove.6B",
+        "KD_path":  "/Users/glori/Desktop/STMicroelectronics/VQA KD",
+        "output_path": "outputs"
+    }
+}

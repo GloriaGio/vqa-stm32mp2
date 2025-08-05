@@ -3,10 +3,10 @@ import os
 # hide INFO and WARNING
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-from dataset import get_vqav2_training
-from dataset import get_vqav2_validation
-from vqa_models import get_net
-from custom_generators import Custom_Generator
+from data.dataset import get_vqav2_training
+from data.dataset import get_vqav2_validation
+from models.vqa_models import get_net
+from data.custom_generators import Custom_Generator
 
 import argparse
 import pandas as pd

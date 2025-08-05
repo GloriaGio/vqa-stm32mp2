@@ -1,11 +1,10 @@
-from dataset import get_vqav2
-import config
-
 from collections import Counter
 import re
 import json
 import numpy as np
 from pathlib import Path
+
+from data.dataset import get_vqav2
 
 
 class Tokenizer:
@@ -90,6 +89,36 @@ class Tokenizer:
             json.dump(self.word_index, f)
 
 
+def save_tokenizer(config, tokenizer_path, verbose=False):
+    df_train = get_vqav2(
+        config["paths"]["dataset_path"],
+        split="train2014",
+        keep_10ans=False,
+        verbose=verbose,
+    )
+    questions_list = list(df_train["question"])
+
+    num_words = (
+        None
+        if config["model"]["num_vocab_words"] <= 0
+        else config["model"]["num_vocab_words"]
+    )
+    min_freq = max(0, config["model"]["min_frequency"])
+
+    tok = Tokenizer(
+        num_words=num_words,
+        min_freq=min_freq,
+        pad_token="<pad>",
+        oov_token="<unk>",
+    )
+    tok.fit_on_texts(questions_list)
+
+    if verbose:
+        print("Vocabulary size:", tok.vocab_size)
+
+    tok.save_json(tokenizer_path)
+
+
 def get_GloVe_emb(GloVe_folder, dim=50, word_index=None):
     # word_index=None to get all 400k word embeddings
     # otherwise the embedding of words in word_index
@@ -128,7 +157,7 @@ def get_GloVe_emb(GloVe_folder, dim=50, word_index=None):
 
 if __name__ == "__main__":
 
-    print("Loading the training data...")
+    """print("Loading the training data...")
     df_train = get_vqav2(
         config.dataset_path, train=True, keep_10ans=False, verbose=True
     )
@@ -138,4 +167,4 @@ if __name__ == "__main__":
     tok.fit_on_texts(questions_list)
     print(tok.vocab_size)
 
-    tok.save_json(config.trained_models_path / "tokenizer_word_index.json")
+    tok.save_json(config.trained_models_path / "tokenizer_word_index.json")"""
