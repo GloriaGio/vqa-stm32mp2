@@ -1,10 +1,14 @@
+import json
+
 from tensorflow import keras
 import numpy as np
 
+from models.get_glove import get_GloVe_emb
 
-# su STM32MP257F-EV1 impiega 151.3 ms da quantizzato.
+
 def MFB_Baseline(
     k=5,
+    output_MFB=1024,
     maxlen=15,
     num_words=5000,
     emb_dim=50,
@@ -82,8 +86,8 @@ def MFB_Baseline(
     im_feat = keras.layers.UnitNormalization(axis=-1)(im_feat)
 
     # MFB pooling
-    q_mfb = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(q_feat)
-    im_mfb = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(im_feat)
+    q_mfb = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(q_feat)
+    im_mfb = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(im_feat)
     fus_mfb = keras.layers.Multiply()([q_mfb, im_mfb])
     fus_mfb = keras.layers.Dropout(dropout_rate)(fus_mfb)
     fus_mfb = keras.layers.Reshape((-1, 1))(fus_mfb)
@@ -113,6 +117,7 @@ def MFB_Baseline(
 
 def MFB_Attention(
     k=5,
+    output_MFB=1024,
     num_glimps=2,
     maxlen=15,
     num_words=5000,
@@ -189,10 +194,10 @@ def MFB_Attention(
     im_feat = mobilenet_base(image_input, training=False)
 
     # MFB pooling 1
-    q_mfb1 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(q_feat)
+    q_mfb1 = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(q_feat)
     q_mfb1 = keras.layers.Reshape((1, 1, -1))(q_mfb1)
     im_mfb1 = keras.layers.Conv2D(
-        1024 * k, 1, padding="same", kernel_initializer="he_normal"
+        output_MFB * k, 1, padding="same", kernel_initializer="he_normal"
     )(im_feat)
     fus_mfb1 = keras.layers.Multiply()([q_mfb1, im_mfb1])
     fus_mfb1 = keras.layers.Dropout(dropout_rate)(fus_mfb1)
@@ -229,8 +234,8 @@ def MFB_Attention(
             im_att = keras.layers.Concatenate(axis=-1)([im_att, im_att2])
 
     # MFB pooling 2
-    q_mfb2 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(q_feat)
-    im_mfb2 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(im_att)
+    q_mfb2 = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(q_feat)
+    im_mfb2 = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(im_att)
     fus_mfb2 = keras.layers.Multiply()([q_mfb2, im_mfb2])
     fus_mfb2 = keras.layers.Dropout(dropout_rate)(fus_mfb2)
     fus_mfb2 = keras.layers.Reshape((-1, 1))(fus_mfb2)
@@ -260,6 +265,7 @@ def MFB_Attention(
 
 def MFB_CoAttention(
     k=5,
+    output_MFB=1024,
     num_glimps=2,
     maxlen=15,
     num_words=5000,
@@ -353,10 +359,10 @@ def MFB_CoAttention(
     im_feat = mobilenet_base(image_input, training=False)
 
     # MFB pooling 1
-    q_mfb1 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(q_att)
+    q_mfb1 = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(q_att)
     q_mfb1 = keras.layers.Reshape((1, 1, -1))(q_mfb1)
     im_mfb1 = keras.layers.Conv2D(
-        1024 * k, 1, padding="same", kernel_initializer="he_normal"
+        output_MFB * k, 1, padding="same", kernel_initializer="he_normal"
     )(im_feat)
     fus_mfb1 = keras.layers.Multiply()([q_mfb1, im_mfb1])
     fus_mfb1 = keras.layers.Dropout(dropout_rate)(fus_mfb1)
@@ -393,8 +399,8 @@ def MFB_CoAttention(
             im_att = keras.layers.Concatenate(axis=-1)([im_att, im_att2])
 
     # MFB pooling 2
-    q_mfb2 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(q_att)
-    im_mfb2 = keras.layers.Dense(1024 * k, kernel_initializer="he_normal")(im_att)
+    q_mfb2 = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(q_att)
+    im_mfb2 = keras.layers.Dense(output_MFB * k, kernel_initializer="he_normal")(im_att)
     fus_mfb2 = keras.layers.Multiply()([q_mfb2, im_mfb2])
     fus_mfb2 = keras.layers.Dropout(dropout_rate)(fus_mfb2)
     fus_mfb2 = keras.layers.Reshape((-1, 1))(fus_mfb2)
@@ -422,8 +428,85 @@ def MFB_CoAttention(
     return model
 
 
+
+def get_model(config, tokenizer_path=None):
+
+    use_glove = config['model']['use_glove']
+    if use_glove and tokenizer_path is not None:
+        with open(tokenizer_path) as file:
+            word_index = json.load(file)
+
+        glove_emb, _ = get_GloVe_emb(
+            config["paths"]["glove_path"],
+            dim=config["model"]["embedding_dim"],
+            word_index=word_index,
+        )
+    else:
+        glove_emb = None
+
+    last_softmax = not config["training"]["knowledge_distillation"] 
+
+    if config["model"]["model_architecture"] == "MFBBaseline":
+        config['model']['num_attention_glimps'] = -1
+        model = MFB_Baseline(
+            k=config['model']['k_window'],
+            output_MFB=config['model']['output_MFB'],
+            maxlen=config['model']['max_length'],
+            num_words=config['model']['num_vocab_words'],
+            emb_dim=config['model']['embedding_dim'],
+            glove_emb=glove_emb,
+            im_size=config['model']['image_size'],
+            num_channels=config['model']['num_channels'],
+            num_classes=config['model']['num_classes'],
+            dropout_rate=config['model']['dropout_rate'],
+            last_softmax=last_softmax,
+            )
+    elif config["model"]["model_architecture"] == "MFBAttention": 
+        num_glimps = config['model']['num_attention_glimps']
+        if num_glimps<1:
+            raise KeyError(f"invalid number of attention glimps ({num_glimps})")
+        model = MFB_Attention(
+            k=config['model']['k_window'],
+            output_MFB=config['model']['output_MFB'],
+            num_glimps=config['model']['num_attention_glimps'],
+            maxlen=config['model']['max_length'],
+            num_words=config['model']['num_vocab_words'],
+            emb_dim=config['model']['embedding_dim'],
+            glove_emb=glove_emb,
+            im_size=config['model']['image_size'],
+            num_channels=config['model']['num_channels'],
+            num_classes=config['model']['num_classes'],
+            dropout_rate=config['model']['dropout_rate'],
+            last_softmax=last_softmax,
+            )
+    elif config["model"]["model_architecture"] == "MFBCoAttention":
+        num_glimps = config['model']['num_attention_glimps']
+        if num_glimps<1:
+            raise KeyError(f"invalid number of attention glimps ({num_glimps})")
+        model = MFB_CoAttention(
+            k=config['model']['k_window'],
+            output_MFB=config['model']['output_MFB'],
+            num_glimps=config['model']['num_attention_glimps'],
+            maxlen=config['model']['max_length'],
+            num_words=config['model']['num_vocab_words'],
+            emb_dim=config['model']['embedding_dim'],
+            glove_emb=glove_emb,
+            im_size=config['model']['image_size'],
+            num_channels=config['model']['num_channels'],
+            num_classes=config['model']['num_classes'],
+            dropout_rate=config['model']['dropout_rate'],
+            last_softmax=last_softmax,
+            )
+    else:
+        arch = config["model"]["model_architecture"]
+        raise KeyError(f"{arch} architecture does not exits")
+    
+    print("Number of parameters:", model.count_params())
+    return model
+
+
 if __name__ == "__main__":
-    model = MFB_Attention()
+    '''model = MFB_Attention()
     print("Number of parameters:", model.count_params())
 
     num_words = 5000
@@ -437,4 +520,4 @@ if __name__ == "__main__":
     print("Output shape:", pred.shape)
 
     if True:
-        model.save("PROVA.keras")
+        model.save("PROVA.keras")'''

@@ -8,6 +8,7 @@ from utils.config import load_config
 from data.dataset import get_filtered_trainval
 from data.text_processing import save_tokenizer
 from data.custom_generators import get_custom_generators
+from models.vqa_models import get_model
 
 
 def get_args():
@@ -38,14 +39,16 @@ def get_args():
 
 
 def main(config):
-    # non so...
 
-    # se KD o from scratch
+    if config["training"]["knowledge_distillation"]:
+        config["model"]["consider_teacher"] = True
+    else:
+        config['training']['temperature'] = -1
+        config['training']['alpha'] = -1
 
     df_train, df_val = get_filtered_trainval(
-        config, consider_teacher=True, verbose=True
+        config, consider_teacher=config["model"]["consider_teacher"], verbose=True
     )
-    # print(len(df_train), len(df_val))
 
     if config["model"]["num_vocab_words"] > 0:
         config["model"]["min_frequency"] = 0
@@ -62,15 +65,18 @@ def main(config):
         df_train, df_val, tokenizer_path, config
     )
 
+    model = get_model(config, tokenizer_path)
+
     if config["training"]["knowledge_distillation"]:
+        # model = train_model(model, train_data, val_data, epochs ecc)
+        # tipo per model se riportare ultimo o best
         pass
     else:
         pass
 
-    # model = train_model(model, train_data, val_data, epochs ecc)
-    # tipo per model se riportare ultimo o best
-
     # model.save(path_save ecc)
+
+    # calcolo accuracy normale ecc
 
     pass
 
@@ -99,4 +105,4 @@ if __name__ == "__main__":
     config.pop("paths", None)
     with open(saving_folder / "used_config.json", "w") as f:
         json.dump(config, f, indent=3)
-        # ricordarmi di mettere a -1 temperature, alpha o num_glimps nella config
+        # ricordarmi di mettere a -1 temperature, alpha o num_glimps nella config (e che altro)

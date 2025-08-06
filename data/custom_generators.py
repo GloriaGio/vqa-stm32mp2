@@ -5,7 +5,7 @@ import numpy as np
 from tensorflow import keras
 from sklearn.preprocessing import OneHotEncoder
 
-from data.text_processing import Tokenizer, get_GloVe_emb
+from data.text_processing import Tokenizer
 
 #
 #
@@ -129,12 +129,6 @@ def get_custom_generators(df_train, df_val, tokenizer_path, config):
 
     config["model"]["num_vocab_words"] = len(word_index)
 
-    glove_emb, _ = get_GloVe_emb(
-        config["paths"]["glove_path"],
-        dim=config["model"]["embedding_dim"],
-        word_index=word_index,
-    )
-
     list_train_gt = list(df_train["normalized_answer"])
     train_gt = np.reshape(np.array(list_train_gt), (-1, 1))
     onehot_encoder = OneHotEncoder(
@@ -150,7 +144,7 @@ def get_custom_generators(df_train, df_val, tokenizer_path, config):
     if config["training"]["knowledge_distillation"]:
         # teacher answers
         answers_labels = {}
-        with open(config.KD_path / "answer2label.txt", encoding="utf-8") as file:
+        with open(config['paths']['KD_path'] / "answer2label.txt", encoding="utf-8") as file:
             for row in file:
                 diz = json.loads(row.strip())
                 answers_labels[diz["answer"]] = diz["label"]
@@ -160,8 +154,8 @@ def get_custom_generators(df_train, df_val, tokenizer_path, config):
         for a in possible_ans:
             teacher_indexes.append(answers_labels[a])
 
-        train_logits_path = config["model"]["KD_path"] / "train_logits"
-        val_logits_path = config["model"]["KD_path"] / "val_logits"
+        train_logits_path = config["paths"]["KD_path"] / "train_logits"
+        val_logits_path = config["paths"]["KD_path"] / "val_logits"
     else:
         teacher_indexes = None
         train_logits_path = None
