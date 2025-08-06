@@ -2,6 +2,7 @@
     "seed": 1,
     "model": 
     {
+        "model_architecture": "MFBBaseline",
         "max_length": 15,
         "num_vocab_words": -1,
         "min_frequency": 5,
@@ -22,7 +23,9 @@
         "lr": 0.0001,
         "batch_size": 32,
         "alpha": 0.1,
-        "temperature": 3
+        "temperature": 3,
+        "knowledge_distillation": true,
+        "restore_best_weights": false
     },
     "paths":
     {

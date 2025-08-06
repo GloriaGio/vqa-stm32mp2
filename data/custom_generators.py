@@ -3,7 +3,7 @@ import json
 import cv2
 import numpy as np
 from tensorflow import keras
-from sklearn.preprocessing import OneHotEncoder
+from data.onehot_encoder import OneHotEncoder
 
 from data.text_processing import Tokenizer
 
@@ -92,7 +92,6 @@ class Custom_Generator(keras.utils.Sequence):
 
         # onehot encoding
         batch_gt = list(batch_df["normalized_answer"])
-        batch_gt = np.reshape(np.array(batch_gt), (-1, 1))
         batch_gt = self.onehot_encoder.transform(batch_gt)
 
         if self.logits_path is None:
@@ -122,26 +121,18 @@ class Custom_Generator(keras.utils.Sequence):
 #
 
 
-def get_custom_generators(df_train, df_val, tokenizer_path, config):
+def get_custom_generators(df_train, df_val, tokenizer_path, possible_ans_path, config, get_logits=True):
     with open(tokenizer_path) as file:
         word_index = json.load(file)
     tokenizer = Tokenizer(word_index=word_index, maxlen=config["model"]["max_length"])
 
     config["model"]["num_vocab_words"] = len(word_index)
 
-    list_train_gt = list(df_train["normalized_answer"])
-    train_gt = np.reshape(np.array(list_train_gt), (-1, 1))
-    onehot_encoder = OneHotEncoder(
-        sparse_output=False, handle_unknown="ignore", dtype=np.float32
-    )
-    onehot_encoder.fit(train_gt)
+    with open(possible_ans_path) as file:
+        possible_ans = json.load(file)
+    onehot_encoder = OneHotEncoder(categories=possible_ans)
 
-    # saving ordered possible answers
-    possible_ans = (onehot_encoder.categories_[0]).tolist()
-    with open(config["paths"]["saving_folder"] / "possible_answers.json", "w") as f:
-        json.dump(possible_ans, f)
-
-    if config["training"]["knowledge_distillation"]:
+    if config["training"]["knowledge_distillation"] and get_logits:
         # teacher answers
         answers_labels = {}
         with open(config['paths']['KD_path'] / "answer2label.txt", encoding="utf-8") as file:

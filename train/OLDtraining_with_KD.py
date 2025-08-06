@@ -7,7 +7,7 @@ import config
 from data.dataset import get_vqav2
 from data.text_processing import Tokenizer, get_GloVe_emb
 from data.custom_generators import Custom_Generator
-from models.distiller import Distiller
+from train.distiller import Distiller
 from models.vqa_models import MFB_Baseline, MFB_Attention, MFB_CoAttention
 
 import argparse
