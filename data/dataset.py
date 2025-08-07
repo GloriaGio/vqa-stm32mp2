@@ -22,6 +22,8 @@ def get_ans_list(dict_list):
 
 
 def get_vqav2(dataset_path, split="train2014", keep_10ans=False, verbose=True):
+    # Load the full Pandas DataFrame for the specified split (train2014, val2014, test2015 or test-dev2015), answers are normalized
+    # If keep_10ans=True, also load the 10 answers associated with each question (only for train2014 and val2014)
 
     if verbose:
         print("Set: ", split)
@@ -63,8 +65,10 @@ def get_vqav2(dataset_path, split="train2014", keep_10ans=False, verbose=True):
 
 
 def get_filtered_trainval(config, consider_teacher=True, verbose=True):
+    # Load training set and select top-num_classes frequent answers (optionally constrained by teacher model);
+    # return filtered train and validation DataFrames
 
-    # Training set
+    # Load Training set
     df_train = get_vqav2(
         config["paths"]["dataset_path"],
         split="train2014",
@@ -73,7 +77,7 @@ def get_filtered_trainval(config, consider_teacher=True, verbose=True):
     )
 
     if consider_teacher:
-        # teacher answers
+        # Load teacher answers
         answers_labels = {}
         with open(
             config["paths"]["KD_path"] / "answer2label.txt", encoding="utf-8"
@@ -96,9 +100,11 @@ def get_filtered_trainval(config, consider_teacher=True, verbose=True):
 
         if len(possible_ans) == config["model"]["num_classes"]:
             break
+
+    # Set the final number of answer classes
     config["model"]["num_classes"] = len(possible_ans)
 
-    # filtered dataset (most frequent answers only)
+    # Get filtered train set
     df_train_filtered = df_train[
         df_train["normalized_answer"].isin(possible_ans)
     ].copy()
@@ -111,7 +117,7 @@ def get_filtered_trainval(config, consider_teacher=True, verbose=True):
             f"Number of training samples after filtering: {len(df_train_filtered)} ({len(df_train_filtered)/len(df_train)*100: .2f} % )"
         )
 
-    # Validation set
+    # Load Validation set
     df_val = get_vqav2(
         config["paths"]["dataset_path"],
         split="val2014",
@@ -119,7 +125,7 @@ def get_filtered_trainval(config, consider_teacher=True, verbose=True):
         verbose=verbose,
     )
 
-    # filtered dataset
+    # Get filtered val set
     df_val_filtered = df_val[df_val["normalized_answer"].isin(possible_ans)].copy()
     df_val_filtered["weight"] = df_val_filtered["normalized_answer"].apply(
         lambda x: weight_dict[x]
@@ -131,8 +137,3 @@ def get_filtered_trainval(config, consider_teacher=True, verbose=True):
         )
 
     return df_train_filtered, df_val_filtered
-
-
-if __name__ == "__main__":
-
-    print("??")

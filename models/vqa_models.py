@@ -5,6 +5,10 @@ import numpy as np
 
 from models.get_glove import get_GloVe_emb
 
+#
+#
+#
+
 
 def MFB_Baseline(
     k=5,
@@ -113,6 +117,11 @@ def MFB_Baseline(
     model = keras.models.Model(inputs=[text_input, image_input], outputs=outputs)
 
     return model
+
+
+#
+#
+#
 
 
 def MFB_Attention(
@@ -261,6 +270,11 @@ def MFB_Attention(
     model = keras.models.Model(inputs=[text_input, image_input], outputs=outputs)
 
     return model
+
+
+#
+#
+#
 
 
 def MFB_CoAttention(
@@ -428,10 +442,17 @@ def MFB_CoAttention(
     return model
 
 
+#
+#
+#
+
 
 def get_model(config, tokenizer_path=None):
+    # Initialize and return the model specified in the config.
+    # Loads GloVe embeddings if enabled and available, and supports different MFB-based architectures.
 
-    use_glove = config['model']['use_glove']
+    # Load GloVe embeddings if enabled and tokenizer is provided
+    use_glove = config["model"]["use_glove"]
     if use_glove and tokenizer_path is not None:
         with open(tokenizer_path) as file:
             word_index = json.load(file)
@@ -444,80 +465,65 @@ def get_model(config, tokenizer_path=None):
     else:
         glove_emb = None
 
-    last_softmax = not config["training"]["knowledge_distillation"] 
+    # Determine whether to apply softmax at the end, based on knowledge distillation setting
+    last_softmax = not config["training"]["knowledge_distillation"]
 
+    # Instantiate the selected model architecture with parameters from config
+    # Raise an error if an unsupported architecture is specified
     if config["model"]["model_architecture"] == "MFBBaseline":
-        config['model']['num_attention_glimps'] = -1
+        config["model"]["num_attention_glimps"] = -1
         model = MFB_Baseline(
-            k=config['model']['k_window'],
-            output_MFB=config['model']['output_MFB'],
-            maxlen=config['model']['max_length'],
-            num_words=config['model']['num_vocab_words'],
-            emb_dim=config['model']['embedding_dim'],
+            k=config["model"]["k_window"],
+            output_MFB=config["model"]["output_MFB"],
+            maxlen=config["model"]["max_length"],
+            num_words=config["model"]["num_vocab_words"],
+            emb_dim=config["model"]["embedding_dim"],
             glove_emb=glove_emb,
-            im_size=config['model']['image_size'],
-            num_channels=config['model']['num_channels'],
-            num_classes=config['model']['num_classes'],
-            dropout_rate=config['model']['dropout_rate'],
+            im_size=config["model"]["image_size"],
+            num_channels=config["model"]["num_channels"],
+            num_classes=config["model"]["num_classes"],
+            dropout_rate=config["model"]["dropout_rate"],
             last_softmax=last_softmax,
-            )
-    elif config["model"]["model_architecture"] == "MFBAttention": 
-        num_glimps = config['model']['num_attention_glimps']
-        if num_glimps<1:
+        )
+    elif config["model"]["model_architecture"] == "MFBAttention":
+        num_glimps = config["model"]["num_attention_glimps"]
+        if num_glimps < 1:
             raise KeyError(f"invalid number of attention glimps ({num_glimps})")
         model = MFB_Attention(
-            k=config['model']['k_window'],
-            output_MFB=config['model']['output_MFB'],
-            num_glimps=config['model']['num_attention_glimps'],
-            maxlen=config['model']['max_length'],
-            num_words=config['model']['num_vocab_words'],
-            emb_dim=config['model']['embedding_dim'],
+            k=config["model"]["k_window"],
+            output_MFB=config["model"]["output_MFB"],
+            num_glimps=config["model"]["num_attention_glimps"],
+            maxlen=config["model"]["max_length"],
+            num_words=config["model"]["num_vocab_words"],
+            emb_dim=config["model"]["embedding_dim"],
             glove_emb=glove_emb,
-            im_size=config['model']['image_size'],
-            num_channels=config['model']['num_channels'],
-            num_classes=config['model']['num_classes'],
-            dropout_rate=config['model']['dropout_rate'],
+            im_size=config["model"]["image_size"],
+            num_channels=config["model"]["num_channels"],
+            num_classes=config["model"]["num_classes"],
+            dropout_rate=config["model"]["dropout_rate"],
             last_softmax=last_softmax,
-            )
+        )
     elif config["model"]["model_architecture"] == "MFBCoAttention":
-        num_glimps = config['model']['num_attention_glimps']
-        if num_glimps<1:
+        num_glimps = config["model"]["num_attention_glimps"]
+        if num_glimps < 1:
             raise KeyError(f"invalid number of attention glimps ({num_glimps})")
         model = MFB_CoAttention(
-            k=config['model']['k_window'],
-            output_MFB=config['model']['output_MFB'],
-            num_glimps=config['model']['num_attention_glimps'],
-            maxlen=config['model']['max_length'],
-            num_words=config['model']['num_vocab_words'],
-            emb_dim=config['model']['embedding_dim'],
+            k=config["model"]["k_window"],
+            output_MFB=config["model"]["output_MFB"],
+            num_glimps=config["model"]["num_attention_glimps"],
+            maxlen=config["model"]["max_length"],
+            num_words=config["model"]["num_vocab_words"],
+            emb_dim=config["model"]["embedding_dim"],
             glove_emb=glove_emb,
-            im_size=config['model']['image_size'],
-            num_channels=config['model']['num_channels'],
-            num_classes=config['model']['num_classes'],
-            dropout_rate=config['model']['dropout_rate'],
+            im_size=config["model"]["image_size"],
+            num_channels=config["model"]["num_channels"],
+            num_classes=config["model"]["num_classes"],
+            dropout_rate=config["model"]["dropout_rate"],
             last_softmax=last_softmax,
-            )
+        )
     else:
         arch = config["model"]["model_architecture"]
         raise KeyError(f"{arch} architecture does not exits")
-    
+
     print("Number of parameters:", model.count_params())
     return model
-
-
-if __name__ == "__main__":
-    '''model = MFB_Attention()
-    print("Number of parameters:", model.count_params())
-
-    num_words = 5000
-    maxlen = 15
-    im_size = 224
-    num_ch = 3
-    q = np.random.randint(0, num_words, (1, maxlen))
-    im = np.random.randint(0, 256, (1, im_size, im_size, num_ch))
-    im = im / 255 * 2 - 1
-    pred = model.predict((q, im))
-    print("Output shape:", pred.shape)
-
-    if True:
-        model.save("PROVA.keras")'''

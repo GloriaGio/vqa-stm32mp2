@@ -117,18 +117,3 @@ def save_tokenizer(config, tokenizer_path, verbose=False):
         print("Vocabulary size:", tok.vocab_size)
 
     tok.save_json(tokenizer_path)
-
-
-if __name__ == "__main__":
-
-    """print("Loading the training data...")
-    df_train = get_vqav2(
-        config.dataset_path, train=True, keep_10ans=False, verbose=True
-    )
-    questions_list = list(df_train["question"])
-
-    tok = Tokenizer(min_freq=config.min_freq, pad_token="<pad>", oov_token="<unk>")
-    tok.fit_on_texts(questions_list)
-    print(tok.vocab_size)
-
-    tok.save_json(config.trained_models_path / "tokenizer_word_index.json")"""

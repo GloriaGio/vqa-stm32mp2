@@ -1,5 +1,4 @@
 {
-    "seed": 1,
     "model": 
     {
         "model_architecture": "MFBBaseline",

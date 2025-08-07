@@ -1,6 +1,7 @@
 import json
 import numpy as np
 
+
 class OneHotEncoder:
     def __init__(self, categories=None, handle_unknown="ignore"):
         self.categories = categories
@@ -19,15 +20,14 @@ class OneHotEncoder:
     def transform(self, list_to_transf):
         indices = [self.class_to_index.get(label, -1) for label in list_to_transf]
         return self._to_one_hot(indices)
-    
+
     def _to_one_hot(self, indices):
         one_hot = np.zeros((len(indices), len(self.categories)), dtype=np.float32)
         for i, idx in enumerate(indices):
             if idx != -1:
                 one_hot[i, idx] = 1.0
         return one_hot
-    
+
     def save_json(self, saving_path):
         with open(saving_path, "w") as f:
             json.dump(self.categories, f)
-

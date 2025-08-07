@@ -1,4 +1,4 @@
-############################ NOTA: COPIATO E INCOLLATO DA CARTELLA BEIT3 #####################################
+# This file (glossary.py) was copied from beit3 repositpry
 
 import re
 

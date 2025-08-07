@@ -2,8 +2,8 @@ import numpy as np
 
 
 def get_GloVe_emb(GloVe_folder, dim=50, word_index=None):
-    # word_index=None to get all 400k word embeddings
-    # otherwise the embedding of words in word_index
+    # Load GloVe embeddings:
+    # all 400k if word_index is None, otherwise only for words in word_index
 
     path = GloVe_folder / f"glove.6B.{dim}d.txt"
 

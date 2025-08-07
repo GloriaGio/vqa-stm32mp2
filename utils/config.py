@@ -11,6 +11,8 @@ def load_config(config_path=None):
     with open(config_path, "r") as f:
         config = json.load(f)
 
-    paths = config["paths"]
-    config["paths"] = {k: Path(v) for k, v in paths.items()}
+    if "paths" in config.keys():
+        paths = config["paths"]
+        config["paths"] = {k: Path(v) for k, v in paths.items()}
+
     return config
