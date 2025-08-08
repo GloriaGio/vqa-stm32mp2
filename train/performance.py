@@ -5,8 +5,10 @@ def preliminary_performance(model, train_data, valid_data, verbose=True):
     val_loss, val_accuracy = model.evaluate(valid_data)
 
     if verbose:
-        print(f"Train Loss: {train_loss}, Val Loss: {val_loss}")
-        print(f"Train Accuracy: {train_accuracy}, Val Accuracy: {val_accuracy}")
+        print(f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        print(
+            f"Train Accuracy: {train_accuracy*100:.2f}, Val Accuracy: {val_accuracy*100:.2f}"
+        )
 
         return {
             "train_loss": train_loss,
