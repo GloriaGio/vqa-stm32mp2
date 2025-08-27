@@ -18,22 +18,22 @@ from train.performance import preliminary_performance
 
 
 def get_args():
-    parser = argparse.ArgumentParser("train a VQA model")
+    parser = argparse.ArgumentParser("Script to train a VQA model.")
     parser.add_argument(
         "--model-arch",
         type=str,
         choices=["MFBBaseline", "MFBAttention", "MFBCoAttention"],
-        help="Model architecture to use: MFBBaseline, MFBAttention, MFBCoAttention",
+        help="Model architecture to use for training: MFBBaseline, MFBAttention, MFBCoAttention.",
     )
     parser.add_argument(
         "--num-epochs",
         type=int,
-        help="Maximum number of epochs",
+        help="Number of training epochs.",
     )
     parser.add_argument(
         "--batch-size",
         type=int,
-        help="Batch size",
+        help="Batch size to use during training.",
     )
     return parser.parse_args()
 

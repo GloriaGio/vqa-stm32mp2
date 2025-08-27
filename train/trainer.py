@@ -55,6 +55,12 @@ def train_with_KD(model, train_data, valid_data, config):
         callbacks=callbacks,
     )
 
+    model.compile(
+        loss=keras.losses.CategoricalCrossentropy(from_logits=True),
+        optimizer=keras.optimizers.Adam(learning_rate=config["training"]["lr"]),
+        metrics=["accuracy"],
+    )
+
     return model
 
 
