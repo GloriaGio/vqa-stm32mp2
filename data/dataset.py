@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from data.glossary import normalize_word
+from data.text_utils import normalize_word
 
 
 def get_image_name(image_id, which_set="train2014"):

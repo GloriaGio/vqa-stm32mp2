@@ -1,8 +1,7 @@
-# This file (glossary.py) was copied from beit3 repositpry
-
 import re
 
-contractions = {
+# Dictionary of common english contractions
+contractions_map = {
     "aint": "ain't",
     "arent": "aren't",
     "cant": "can't",
@@ -125,8 +124,8 @@ contractions = {
     "youve": "you've",
 }
 
-manual_map = {
-    "none": "0",
+# Manual map of numbers written in letters
+numbers_map = {
     "zero": "0",
     "one": "1",
     "two": "2",
@@ -138,11 +137,16 @@ manual_map = {
     "eight": "8",
     "nine": "9",
     "ten": "10",
+    "none": "0",
 }
+
+# Articles to be removed
 articles = ["a", "an", "the"]
-period_strip = re.compile("(?!<=\d)(\.)(?!\d)")
-comma_strip = re.compile("(\d)(\,)(\d)")
-punct = [
+
+# Regex to remove non-numeric punctuation
+period_regex = re.compile(r"(?<!\d)\.(?!\d)")
+comma_regex = re.compile(r"(?<=\d),(?=\d)")
+punctuation = [
     ";",
     r"/",
     "[",
@@ -168,25 +172,21 @@ punct = [
 
 
 def normalize_word(token):
-    _token = token
-    for p in punct:
-        if (p + " " in token or " " + p in token) or (
-            re.search(comma_strip, token) != None
-        ):
-            _token = _token.replace(p, "")
-        else:
-            _token = _token.replace(p, " ")
-    token = period_strip.sub("", _token, re.UNICODE)
+    token = comma_regex.sub("", token)
+    for p in punctuation:
+        token = token.replace(p, " ")
+    token = period_regex.sub("", token)
 
-    _token = []
-    temp = token.lower().split()
-    for word in temp:
-        word = manual_map.setdefault(word, word)
+    words = token.lower().split()
+    cleaned_words = []
+
+    for word in words:
+        word = numbers_map.get(word, word)
+        word = contractions_map.get(word, word)
+
         if word not in articles:
-            _token.append(word)
-    for i, word in enumerate(_token):
-        if word in contractions:
-            _token[i] = contractions[word]
-    token = " ".join(_token)
+            cleaned_words.append(word)
+
+    token = " ".join(cleaned_words)
     token = token.replace(",", "")
     return token

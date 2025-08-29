@@ -1,3 +1,6 @@
+from tqdm import tqdm
+
+
 def preliminary_performance(model, train_data, valid_data, verbose=True):
     # Evaluate the model's preliminary loss and standard accuracy
 
@@ -33,7 +36,7 @@ def get_model_ans(model, dataloader, possible_ans):
     # convert predicted indices to answer strings
 
     model_ans = []
-    for i in range(len(dataloader)):
+    for i in tqdm(range(len(dataloader)), desc="Inference", ncols=80):
         batch_input, _, _ = dataloader[i]
         pred = model.predict(batch_input, verbose=0)
         ans_idx = pred.argmax(axis=-1)
