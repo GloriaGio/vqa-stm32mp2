@@ -1,2 +1,4 @@
 # VQAforMCUs
- VQA model suitable for STM32 MCUs
+
+VQA model suitable for STM32MP2
+
