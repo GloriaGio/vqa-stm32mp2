@@ -35,6 +35,9 @@ def get_args():
         type=int,
         help="Batch size to use during training.",
     )
+    parser.add_argument(
+        "--disable-KD", action="store_true", help="Disable knowledge distillation"
+    )
     return parser.parse_args()
 
 
@@ -45,9 +48,9 @@ def get_args():
 
 def main(config):
 
-    if config["training"]["knowledge_distillation"]:
-        config["model"]["consider_teacher"] = True
-    else:
+    if not config["model"]["consider_teacher"]:
+        config["training"]["knowledge_distillation"] = False
+    if not config["training"]["knowledge_distillation"]:
         config["training"]["temperature"] = -1
         config["training"]["alpha"] = -1
 
@@ -120,6 +123,8 @@ if __name__ == "__main__":
     config = load_config()
 
     # Override default config values
+    if args.disable_KD:
+        config["model"]["consider_teacher"] = False
     if args.model_arch is not None:
         config["model"]["model_architecture"] = args.model_arch
     if args.num_epochs is not None:

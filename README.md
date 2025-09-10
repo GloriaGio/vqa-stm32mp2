@@ -14,7 +14,7 @@ The workflow includes:
 
 ## 1. Model Architectures
 
-The implemented models are based on the architectures proposed by Yu et al. (2017):
+The implemented models are based on the architectures proposed by **Yu et al. (2017)**:
 
 - **MFB Baseline**
 
@@ -24,9 +24,9 @@ The implemented models are based on the architectures proposed by Yu et al. (201
   - Classifier selects the most likely answer from a predefined set of possible answers.
 
   <p align="center">
-  <img src="Images/MFBModule.png" alt="MFB Module" width="200"/>
+  <img src="Images/MFBModule.png" alt="MFB Module" width="300"/>
   </p>
-  <p align="center"><i>Figure 1. MFB module proposed by Yu et a. (2017), <i>k</i> and <i>o</i> are hyper-parameters of the module.</i></p>
+  <p align="center"><i>Figure 1. MFB module proposed by Yu et a. (2017), k and o are hyper-parameters of the module.</i></p>
 
 - **MFB + Attention**
 
@@ -57,7 +57,7 @@ Result: efficient models suitable for deployment on edge devices.
 _Figure 2. Optimized MFB with Co-Attention network. The MFB with Attention and Baseline variants are derived by removing, respectively, the question attention block, and both the question and image attention blocks along with the first MFB module._
 
 <p align="center">
-<img src="Images/TCLsBlock.png" alt="TC Block" width="200"/>
+<img src="Images/TCLsBlock.png" alt="TC Block" width="300"/>
 </p>
 <p align="center"><i> Figure 3. Temporal Convolutional (TC) block replacing LSTM </i></p>
 
@@ -119,17 +119,9 @@ The loss combines two terms:
 - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
 - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) & student logits (_s_).
 
-\[
-\mathcal{L} = \alpha \cdot \mathcal{L}_\text{student} + (1 - \alpha) \cdot \mathcal{L}_\text{distillation}
-\]
-
-\[
-\mathcal{L}\_\text{student} = \mathrm{CE} \left(y, \, \mathrm{Softmax}(s) \right)
-\]
-
-\[
-\mathcal{L}\_\text{distillation} = T^2 \cdot \mathrm{KL} \left( \mathrm{Softmax} (\frac{t}{T} ) \: || \: \mathrm{Softmax} (\frac{s}{T} ) \right)
-\]
+<p align="center">
+<img src="Images/Loss.png" alt="Loss" width="300"/>
+</p>
 
 Parameters used:
 
@@ -162,7 +154,7 @@ After training, models can be exported and optimized for inference:
 
 ## 5. Usage
 
-### Data Setup and External Resources
+### 5.1 Data Setup and External Resources
 
 Before running the code, make sure to download and place the required external resources in the appropriate folders:
 
@@ -199,7 +191,7 @@ Before running the code, make sure to download and place the required external r
      - `answer2label.txt` contains one dictionary per line with keys `answer` and `label`. It maps each possible teacher answer to its corresponding label, which indicates the index of the answer in the logits output of the teacher model.
      - Each `question_id.json` file contains a dictionary with question-related information (question ID, image ID, ground truth answer, model answer, etc.) and a `logits` key containing the teacher model output logits.
 
-   - **Optional:** If teacher logits are not available, you can still train the model from scratch by adjusting the configuration file accordingly.
+   - **Optional:** If teacher logits are not available, you can still train the model from scratch by adjusting the configuration file accordingly (see **5.3 Training a model**).
 
 3. **GloVe embeddings**
 
@@ -211,7 +203,7 @@ Before running the code, make sure to download and place the required external r
      ```
    - **Optional:** you can still train the model without GloVe embeddings by adjusting the configuration file accordingly.
 
-### Installation
+### 5.2 Installation
 
 Clone the repository and install the required Python packages:
 
@@ -221,15 +213,43 @@ cd vqa-stm32mp2
 pip install -r requirements.txt
 ```
 
-### Training a model
+### 5.3 Training a model
 
-**nota**: o modifichi il file config, o dai da terminale
+To train a VQA model, you need to first configure the training parameters in the `config.json` file. This file defines the default model architecture, number of epochs, batch size, learning rate, and other hyperparameters.
+
+> ℹ️ For details on how to modify `config.json`, see section **6.x**.
+
+Once the configuration is set, you can start training using one of the following options:
+
+1. Train using the parameters in `config.json`:
 
 ```bash
-python train.py --model mfb_coatt --epochs 10 --batch_size 64
+python main_train.py
 ```
 
-### Evaluation
+2. Override configuration from the command line:
+
+To change the model architecture (`MFBBaseline`, `MFBAttention`, or `MFBCoAttention`), number of epochs, or batch size:
+
+```bash
+python main_train.py --model-arch MFBBaseline --epochs 10 --batch_size 64
+```
+
+To disable knowledge distillation and train from scratch:
+
+```bash
+python main_train.py --disable-KD
+```
+
+All other parameters not specified in the command line will be taken from `config.json`.
+
+At the end of the training, a new folder will be created containing:
+
+- the **trained model** saved in `.keras` format,
+- the **configuration file** used for training,
+- a JSON file with **preliminary performance metrics** (training/validation accuracy and loss on filtered dataset).
+
+### 5.4 Evaluation
 
 **nota**: da terminale dai almeno la cartella
 
@@ -237,7 +257,7 @@ python train.py --model mfb_coatt --epochs 10 --batch_size 64
 python eval.py --checkpoint checkpoints/mfb_coatt.pth
 ```
 
-### Deployment
+### 5.5 Deployment
 
 **NOTA**: codice che salva in tflite o simile
 
