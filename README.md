@@ -23,9 +23,12 @@ The implemented models are based on the architectures proposed by Yu et al. (201
   - Fusion: MFB module combines image & question features.
   - Classifier selects the most likely answer from a predefined set of possible answers.
 
-  ![MFB Module](Images/MFBModule.png)
+  <p align="center">
+  <img src="Images/MFBModule.png" alt="MFB Module" width="400"/>
+  </p>
+  <p align="center"><i>Figure 1. MFB module proposed by Yu et a. (2017), *k* and *o\* are hyper-parameters of the module.</i></p>
 
-  *Figure 1. MFB module proposed by Yu et a. (2017), *k* and *o\* are hyper-parameters of the module.
+  Figure 1. MFB module proposed by Yu et a. (2017), _k_ and \*o\* are hyper-parameters of the module.
 
 - **MFB + Attention**
 
