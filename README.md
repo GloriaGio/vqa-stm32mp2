@@ -24,11 +24,9 @@ The implemented models are based on the architectures proposed by Yu et al. (201
   - Classifier selects the most likely answer from a predefined set of possible answers.
 
   <p align="center">
-  <img src="Images/MFBModule.png" alt="MFB Module" width="400"/>
+  <img src="Images/MFBModule.png" alt="MFB Module" width="200"/>
   </p>
-  <p align="center"><i>Figure 1. MFB module proposed by Yu et a. (2017), *k* and *o\* are hyper-parameters of the module.</i></p>
-
-  Figure 1. MFB module proposed by Yu et a. (2017), _k_ and \*o\* are hyper-parameters of the module.
+  <p align="center"><i>Figure 1. MFB module proposed by Yu et a. (2017), <i>k</i> and <i>o</i> are hyper-parameters of the module.</i></p>
 
 - **MFB + Attention**
 
@@ -58,9 +56,10 @@ Result: efficient models suitable for deployment on edge devices.
 
 _Figure 2. Optimized MFB with Co-Attention network. The MFB with Attention and Baseline variants are derived by removing, respectively, the question attention block, and both the question and image attention blocks along with the first MFB module._
 
-![TC Block](Images/TCLsBlock.png)
-
-_Figure 3. Temporal Convolutional (TC) block replacing LSTM_
+<p align="center">
+<img src="Images/TCLsBlock.png" alt="TC Block" width="200"/>
+</p>
+<p align="center"><i> Figure 3. Temporal Convolutional (TC) block replacing LSTM </i></p>
 
 ---
 
