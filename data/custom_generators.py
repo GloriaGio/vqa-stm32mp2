@@ -77,14 +77,14 @@ class Custom_Generator(keras.utils.Sequence):
         for im_name in im_names:
             if self.num_channels == 1:
                 how = cv2.IMREAD_GRAYSCALE
+                how2 = cv2.COLOR_GRAY2RGB
             else:
                 how = cv2.IMREAD_COLOR
+                how2 = cv2.COLOR_BGR2RGB
             im_path = self.data_path / direct / im_name
             im = cv2.imread(im_path, how)
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+            im = cv2.cvtColor(im, how2)
             im = cv2.resize(im, (self.im_size, self.im_size))
-            if self.num_channels == 1:
-                im = np.expand_dims(im, axis=-1)
             im = im.astype(dtype="float32") / 255.0 * 2 - 1
             batch_im.append(im)
         batch_im = np.array(batch_im)

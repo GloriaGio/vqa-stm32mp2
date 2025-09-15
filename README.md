@@ -126,7 +126,7 @@ The loss combines two terms:
 - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) & student logits (_s_).
 
 <p align="center">
-<img src="Images/Loss.png" alt="Loss" width="300"/>
+<img src="Images/Loss.png" alt="Loss" width="330"/>
 </p>
 
 Parameters used:
@@ -146,13 +146,13 @@ Since _yes/no_ answers represent ~40% of the dataset, **sample weights** inverse
 
 ### 2.4 Results and Deployment Analysis
 
-The performance of VQA models is measured by comparing the model’s predicted answers to the human-provided reference answers. Given the model’s predicted answer _a~i_ for question _i_, and the ten human-provided reference answers, the accuracy of a model is computed as follows:
+The performance of VQA models is measured by comparing the model’s predicted answers to the human-provided reference answers. Given the model’s predicted answer _a<sub>i</sub>_ for question _i_, and the ten human-provided reference answers, the accuracy of a model is computed as follows:
 
 <p align="center">
-<img src="Images/Accuracy.png" alt="Loss" width="300"/>
+<img src="Images/Accuracy.png" alt="Loss" width="330"/>
 </p>
 
-where _N_ is the number of questions and _count(a~i)_ denotes the number of annotators who provided the answer _a~i_ to question _i_.
+where _N_ is the number of questions and _count(a<sub>i</sub>)_ denotes the number of annotators who provided the answer _a<sub>i</sub>_ to question _i_.
 
 #### VQA Performance
 
@@ -236,6 +236,31 @@ cd vqa-stm32mp2
 pip install -r requirements.txt
 ```
 
+#### Using pre-trained models
+
+If you want to try or use models trained in this tutorial instead of training yourself, download the files from [this Drive link] and place them in the `outputs` folder.
+
+```
+outputs/
+  ├── MFBBaseline/
+  │   ├── used_config.json              # configuration used for trainig
+  │   ├── trained_MFBBaseline.keras     # trained model in Keras format
+  │   ├── trained_MFBBaseline.tflite    # trained model in TFLite format
+  │   └── val2014_accuracy.json         # accuracy on validation set
+  ├── MFBAttention/
+  │   ├── used_config.json
+  │   ├── trained_MFBAttention.keras
+  │   ├── trained_MFBAttention.tflite
+  │   └── val2014_accuracy.json
+  ├── MFBCoAttention/
+  │   ├── used_config.json
+  │   ├── trained_MFBCoAttention.keras
+  │   ├── trained_MFBCoAttention.tflite
+  │   └── val2014_accuracy.json
+  ├── possible_answers_ct1000.json      # list of possible answers for all models
+  └── word_index_mf5.json               # word-to-index mapping used by the tokenizer
+```
+
 ### 3.3 Set Configuration
 
 All training and evaluation settings are stored in the `config.json` file located in the root of the repository.  
@@ -256,8 +281,8 @@ At runtime, values in `config.json` are loaded as defaults.
 - `num_channels`: number of image channels (`3` = RGB, `1` = grayscale).
 - `num_classes`: number of possible answers (the model classifies among this set).
 - `consider_teacher`: (`true`/`false`) whether to restrict answers to those used by the teacher model (useful for knowledge distillation or for comparing models trained with and without KD). **Set to `false` if you don't want to use knowledge distillation.**
-- `k_window`: hyperparameter **k** of the MFB module.
-- `output_MFB`: hyperparameter **o** of the MFB module.
+- `k_window`: hyperparameter _k_ of the MFB module.
+- `output_MFB`: hyperparameter _o_ of the MFB module.
 - `num_attention_glimps`: number of attention glimpses (outputs are concatenated after Global Avg Pooling).
 - `use_glove`: (`true`/`false`) whether to use GloVe embeddings in addition to learned embeddings. **Set to `false` if you don't want to use GloVe embeddings.**
 - `embedding_dim`: dimension of the word embeddings (applies to both GloVe and learned embeddings).
@@ -317,7 +342,7 @@ At the end of the training, a new folder will be created in `outputs` folder con
 ### 3.4 Evaluation
 
 ```bash
-python main_eval.py --model-dir MFBBaseline_250827_1631 --split val2014 --batch-size 32
+python main_eval.py --model-dir MFBBaseline --split val2014 --batch-size 32
 ```
 
 where:
@@ -325,6 +350,20 @@ where:
 - `--model-dir` specifies the folder containing the trained model (created during training),
 - `--split` defines which dataset split to evaluate on (`train2014` or `val2014`),
 - `--batch-size` sets the evaluation batch size (if not specified, the value from the training configuration will be used).
+
+### 3.5 Inference
+
+```bash
+python inference.py --model-dir MFBBaseline --question "..." --image-path ....
+```
+
+### 3.6 TFLite Conversion
+
+To convert in TFLite
+
+```bash
+python convert.py --model-dir MFBBaseline
+```
 
 ---
 
