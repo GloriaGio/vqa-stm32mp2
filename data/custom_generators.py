@@ -74,13 +74,13 @@ class Custom_Generator(keras.utils.Sequence):
         elif "test" in im_names[0]:
             direct = "test2015"
         batch_im = []
+        if self.num_channels == 1:
+            how = cv2.IMREAD_GRAYSCALE
+            how2 = cv2.COLOR_GRAY2RGB
+        else:
+            how = cv2.IMREAD_COLOR
+            how2 = cv2.COLOR_BGR2RGB
         for im_name in im_names:
-            if self.num_channels == 1:
-                how = cv2.IMREAD_GRAYSCALE
-                how2 = cv2.COLOR_GRAY2RGB
-            else:
-                how = cv2.IMREAD_COLOR
-                how2 = cv2.COLOR_BGR2RGB
             im_path = self.data_path / direct / im_name
             im = cv2.imread(im_path, how)
             im = cv2.cvtColor(im, how2)
