@@ -351,19 +351,36 @@ where:
 - `--split` defines which dataset split to evaluate on (`train2014` or `val2014`),
 - `--batch-size` sets the evaluation batch size (if not specified, the value from the training configuration will be used).
 
+After evaluation, the code will save:
+
+- a JSON file with the evaluation metrics (accuracy per question tupe and overall accuracy)
+- a JSON file containing each question ID along with the answer predicted by the model.
+
 ### 3.5 Inference
 
 ```bash
 python inference.py --model-dir MFBBaseline --question "..." --image-path ....
 ```
 
-### 3.6 TFLite Conversion
+where:
 
-To convert in TFLite
+- `--model-dir` specifies the folder containing the trained model,
+- `--question` is the natural language question to ask about the image,
+- `--image-path` is the path to the image file.
+
+The script processes the question and image through the selected VQA model and prints the predicted answer to the console.
+
+### 3.6 TFLite Conversion
 
 ```bash
 python convert.py --model-dir MFBBaseline
 ```
+
+where:
+
+- `--model-dir` specifies the folder containing the trained model.
+
+The script converts the Keras model to TFLite format, applying per-tensor quantization. The resulting .tflite model is saved in the same folder as the original model.
 
 ---
 
