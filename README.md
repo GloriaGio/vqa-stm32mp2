@@ -1,18 +1,28 @@
 # Visual Question Answering (VQA) on Edge Devices
 
-This repository provides a hands-on tutorial, implemented in **Keras**, on how to design and train **Visual Question Answering (VQA)** models for **resource-constrained edge devices**, specifically the **STM32MP2 platform**.  
+## 1. Introduction
+
+This repository provides a hands-on tutorial, on how to design and train **Visual Question Answering (VQA)** models for **resource-constrained edge devices**, specifically the **STM32MP2 platform**. The code is written in **Python** and the models are implemented in **Keras**.
+By following this tutorial, you will obtain a fully trained VQA model that is optimized for the STM32MP2 platform and can leverage its NPU for efficient inference.
+
 The workflow includes:
 
 1. Model architecture design
 2. Dataset preparation and preprocessing
 3. Training with Knowledge Distillation (KD)
-4. Model deployment on STM32MP2
+4. Results and Deployment Analysis on STM32MP2
 
-**NOTE:**: 1. aggiungo tabella/e risultati 2. aggiungo risultati su STM32MP2 3. sistemo come usarlo (ad alto livello) 4. aggiungo dettagli su codice 5. scrivo qui in alto come è strutturato readme e dove trovo cosa
+This README is structured as follows:
+
+- **Tutorial** – overview of the model architectures, dataset preparation, and training procedure, providing all the necessary information to reproduce the VQA models adapted to STM32MP2.
+- **Usage** – instructions on how to install, train, and evaluate the models.
+- **Code Details** – overview of the repository structure and implementation.
 
 ---
 
-## 1. Model Architectures
+## 2. Tutorial: VQA on Edge Devices
+
+### 2.1 Model Architectures
 
 The implemented models are based on the architectures proposed by **Yu et al. (2017)**:
 
@@ -34,15 +44,16 @@ The implemented models are based on the architectures proposed by **Yu et al. (2
   - Uses two MFB modules in sequence.
 
 - **MFB + CoAttention**
-  - Most powerful variant.
+  - Most powerful variant according to Yu et al. (2017).
   - Same as MFB + Attention, but applies **attention over both image and question features**.
 
-### Optimizations for STM32MP2
+#### Optimizations for STM32MP2
 
 The original architectures were modified to make them efficient on the STM32MP2 platform and leverage hardware acceleration (designed for forward CNNs):
 
 - **ResNet-152 → MobileNet V3 Large**
   - Lighter, optimized for edge devices.
+- **Word embeddings**: concatenation of **pretrained GloVe embeddings** and **learned embeddings**
 - **LSTM → Block of Temporal Convolutional Layers (TCLs)**
   - Faster and hardware-friendly sequence modeling.
 - **MFB module simplification**
@@ -61,11 +72,9 @@ _Figure 2. Optimized MFB with Co-Attention network. The MFB with Attention and B
 </p>
 <p align="center"><i> Figure 3. Temporal Convolutional (TC) block replacing LSTM </i></p>
 
----
+### 2.2 Dataset and Preprocessing
 
-## 2. Dataset and Preprocessing
-
-The tutorial uses the **VQAv2 dataset** (Goyal et al., 2017).  
+The dataset considered for this tutorial is the **VQAv2 dataset** (Goyal et al., 2017).  
 Each sample contains:
 
 - An image
@@ -74,7 +83,7 @@ Each sample contains:
 
 Dataset: [VQAv2 official website](https://visualqa.org/)
 
-### Dataset splits
+#### Dataset splits
 
 | Set        | Questions | Images |
 | ---------- | --------- | ------ |
@@ -84,35 +93,32 @@ Dataset: [VQAv2 official website](https://visualqa.org/)
 
 Because the test set does not include ground truth or human-provided answers, all evaluations in this tutorial were carried out on the validation set.
 
-### Answer preprocessing
+#### Answer preprocessing
 
-- Normalized (lowercase, digits, removed articles, etc.).
+- Normalized according to the official preprocessing guidelines (lowercase, digits, removed articles, etc.).
 - Only the **1000 most frequent answers** retained (standard VQA practice).
 - Training set reduced to ~87.5% of original size, and this reduced set was used for training.
 - As a result, the model can only predict one of these 1000 possible answers.
 
-### Image preprocessing
+#### Image preprocessing
 
-- Resized to **224×224**.
-- Normalized to range **[-1, 1]** (MobileNet input format).
+- Resized to **224×224** and normalized to range **[-1, 1]** (MobileNet input format).
 
-### Question preprocessing
+#### Question preprocessing
 
 - Tokenized and padded/truncated to **15 tokens**.
 - Vocabulary: **6415 words** (words appearing ≥5 times).
 - Unknown words replaced with `<unk>`.
 
----
+### 2.3 Training Procedure
 
-## 3. Training Procedure
-
-### Knowledge Distillation (KD)
+#### Knowledge Distillation (KD)
 
 Instead of training from scratch, models are trained using **knowledge distillation**:
 
 **Teacher:** BEiT-3 fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
 
-### Loss function
+#### Loss function
 
 The loss combines two terms:
 
@@ -128,33 +134,50 @@ Parameters used:
 - Temperature `T = 3`
 - Balance coefficient `α = 0.1`
 
-### Class imbalance handling
+#### Class imbalance handling
 
 Since _yes/no_ answers represent ~40% of the dataset, **sample weights** inversely proportional to answer frequency were applied.
 
-### Training setup
+#### Training setup
 
 - GPU: NVIDIA GeForce GTX 1060 (6 GB)
 - Optimizer: **Adam**, learning rate `1e-4`
 - Epochs: **10** (~1 hour per epoch, ~10 hours total per model)
 
+### 2.4 Results and Deployment Analysis
+
+The performance of VQA models is measured by comparing the model’s predicted answers to the human-provided reference answers. Given the model’s predicted answer _a~i_ for question _i_, and the ten human-provided reference answers, the accuracy of a model is computed as follows:
+
+<p align="center">
+<img src="Images/Accuracy.png" alt="Loss" width="300"/>
+</p>
+
+where _N_ is the number of questions and _count(a~i)_ denotes the number of annotators who provided the answer _a~i_ to question _i_.
+
+#### VQA Performance
+
+| Model        | #Params | Overall (%) | Yes/No (%) | Number (%) | Other (%) |
+| ------------ | ------- | ----------- | ---------- | ---------- | --------- |
+| MFB Baseline | 24.4M   | 56.0        | 76.7       | 36.5       | 45.4      |
+| MFB + Att.   | 40.4M   | 57.0        | 77.7       | 37.2       | 46.5      |
+| MFB + CoAtt. | 51.2M   | 56.4        | 76.9       | 36.8       | 46.1      |
+
+The best-performing model is **MFB + Attention**, which we also deployed on the STM32MP2 platform.
+
+#### STM32MP2 Inference Performance
+
+| Model      | Execution Device | Inference time (ms) | Power (W) |
+| ---------- | ---------------- | ------------------- | --------- |
+| MFB + Att. | GPU/NPU          | 56                  | 0.75      |
+| MFB + Att. | CPU              | 434                 | 0.80      |
+
+The results show that **MFB + Attention** achieves efficient inference on STM32MP2, with significantly faster execution and lower power consumption when using the GPU/NPU compared to CPU execution.
+
 ---
 
-## 4. Deployment on STM32MP2
+## 3. Usage
 
-After training, models can be exported and optimized for inference:
-
-- Convert trained models to a format supported by STM32MP2 runtime.
-- Use hardware acceleration (optimized for CNN forward passes).
-- Run VQA inference in real time.
-
-**NOTA:** tabella tempi, energia ecc.
-
----
-
-## 5. Usage
-
-### 5.1 Data Setup and External Resources
+### 3.1 Data Setup and External Resources
 
 Before running the code, make sure to download and place the required external resources in the appropriate folders:
 
@@ -191,19 +214,19 @@ Before running the code, make sure to download and place the required external r
      - `answer2label.txt` contains one dictionary per line with keys `answer` and `label`. It maps each possible teacher answer to its corresponding label, which indicates the index of the answer in the logits output of the teacher model.
      - Each `question_id.json` file contains a dictionary with question-related information (question ID, image ID, ground truth answer, model answer, etc.) and a `logits` key containing the teacher model output logits.
 
-   - **Optional:** If teacher logits are not available, you can still train the model from scratch by adjusting the configuration file accordingly (see **5.3 Training a model**).
+   - **Optional:** If teacher logits are not available, you can still train the model from scratch by adjusting the configuration file accordingly.
 
 3. **GloVe embeddings**
 
    - Download GloVe embeddings (i.e., `glove.6B.zip`) from [GloVe site](https://nlp.stanford.edu/projects/glove/).
    - Unzip the file and place it in:
      ```
-     data/glove/
-          └── glove.6B
+     data/
+      └── glove.6B
      ```
    - **Optional:** you can still train the model without GloVe embeddings by adjusting the configuration file accordingly.
 
-### 5.2 Installation
+### 3.2 Installation
 
 Clone the repository and install the required Python packages:
 
@@ -213,11 +236,53 @@ cd vqa-stm32mp2
 pip install -r requirements.txt
 ```
 
-### 5.3 Training a model
+### 3.3 Set Configuration
 
-To train a VQA model, you need to first configure the training parameters in the `config.json` file. This file defines the default model architecture, number of epochs, batch size, learning rate, and other hyperparameters.
+All training and evaluation settings are stored in the `config.json` file located in the root of the repository.  
+This file contains three sections: **model**, **training**, and **paths**.
 
-> ℹ️ For details on how to modify `config.json`, see section **6.x**.
+The file can be edited manually with any text editor.  
+At runtime, values in `config.json` are loaded as defaults.
+
+> ⚠️ Parameters provided via command-line arguments (e.g. `--model-arch`, `--epochs`) will **override** the corresponding values in `config.json`.
+
+#### Model parameters
+
+- `model_architecture`: VQA model architecture. Options: `MFBBaseline`, `MFBAttention`, `MFBCoAttention`.
+- `max_length`: sequence length for tokenized questions (padded or truncated to `max_length`).
+- `num_vocab_words`: size of the vocabulary for word embeddings (if set to `-1`, the vocabulary size is determined by `min_frequency`).
+- `min_frequency`: minimum frequency for a word to be included in the vocabulary (set to `0` if `num_vocab_words` > 0).
+- `image_size`: size of the input images (e.g. `224` for `224×224`).
+- `num_channels`: number of image channels (`3` = RGB, `1` = grayscale).
+- `num_classes`: number of possible answers (the model classifies among this set).
+- `consider_teacher`: (`true`/`false`) whether to restrict answers to those used by the teacher model (useful for knowledge distillation or for comparing models trained with and without KD). **Set to `false` if you don't want to use knowledge distillation.**
+- `k_window`: hyperparameter **k** of the MFB module.
+- `output_MFB`: hyperparameter **o** of the MFB module.
+- `num_attention_glimps`: number of attention glimpses (outputs are concatenated after Global Avg Pooling).
+- `use_glove`: (`true`/`false`) whether to use GloVe embeddings in addition to learned embeddings. **Set to `false` if you don't want to use GloVe embeddings.**
+- `embedding_dim`: dimension of the word embeddings (applies to both GloVe and learned embeddings).
+- `dropout_rate`: dropout rate applied during training.
+
+#### Training parameters
+
+- `num_epochs`: number of training epochs.
+- `lr`: learning rate.
+- `batch_size`: batch size for training.
+- `alpha`: balancing coefficient for KD loss.
+- `temperature`: softmax temperature for KD.
+- `knowledge_distillation`: (`true`/`false`) whether to use KD during training. If `consider_teacher` is `false` than `knowledge_distillation` is set to false too. If `consider_teacher = true, knowledge_distillation = false` answers are restricted to those used by the teacher model, but KD is not used for training.
+- `restore_best_weights`: (`true`/`false`) whether to restore the best model (based on validation set performance) or keep the final epoch model.
+
+#### Paths
+
+- `dataset_path`: path to the VQAv2 dataset (e.s. `.../data/vqa_dataset`).
+- `glove_path`: path to the GloVe embeddings (e.s. `.../data/glove.6B`).
+- `KD_path`: path to teacher logits (used if KD is enabled, e.s. `...data/teacher_logits`).
+- `output_path`: output folder where trained models, configs, and results are saved (e.s. `outputs`).
+
+### 3.3 Training a model
+
+To train a VQA model, you need to first configure the training parameters in the `config.json` file.
 
 Once the configuration is set, you can start training using one of the following options:
 
@@ -232,7 +297,7 @@ python main_train.py
 To change the model architecture (`MFBBaseline`, `MFBAttention`, or `MFBCoAttention`), number of epochs, or batch size:
 
 ```bash
-python main_train.py --model-arch MFBBaseline --epochs 10 --batch_size 64
+python main_train.py --model-arch MFBBaseline --epochs 10 --batch_size 32
 ```
 
 To disable knowledge distillation and train from scratch:
@@ -243,34 +308,29 @@ python main_train.py --disable-KD
 
 All other parameters not specified in the command line will be taken from `config.json`.
 
-At the end of the training, a new folder will be created containing:
+At the end of the training, a new folder will be created in `outputs` folder containing:
 
 - the **trained model** saved in `.keras` format,
-- the **configuration file** used for training,
+- the **configuration file** used for training, updated to reflect any parameter changes made via command-line arguments or automatic adjustments for incompatible values,
 - a JSON file with **preliminary performance metrics** (training/validation accuracy and loss on filtered dataset).
 
-### 5.4 Evaluation
-
-**nota**: da terminale dai almeno la cartella
+### 3.4 Evaluation
 
 ```bash
-python eval.py --checkpoint checkpoints/mfb_coatt.pth
+python main_eval.py --model-dir MFBBaseline_250827_1631 --split val2014 --batch-size 32
 ```
 
-### 5.5 Deployment
+where:
 
-**NOTA**: codice che salva in tflite o simile
-
-```bash
-# Example (to be completed with STM32MP2 deployment steps)
-python export.py --checkpoint checkpoints/mfb_coatt.pth --backend stm32mp2
-```
+- `--model-dir` specifies the folder containing the trained model (created during training),
+- `--split` defines which dataset split to evaluate on (`train2014` or `val2014`),
+- `--batch-size` sets the evaluation batch size (if not specified, the value from the training configuration will be used).
 
 ---
 
-## 6. Code Details
+## 4. Code Details
 
-**Nota:** entro meglio nel codice.
+**Nota:** entro meglio nel codice... **ANZI DIREI DI NO, ma vediamo va, al massimo su come sia strutturato il codice, quale script faccia cosa, con particolare attenzione a quelli più importanti**
 
 ---
 
