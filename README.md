@@ -24,7 +24,7 @@ This README is structured as follows:
 
 ### 2.1 Model Architectures
 
-The implemented models are based on the architectures proposed by **Yu et al. (2017)**:
+The implemented models are based on the architectures proposed by [**Yu et al. (2017)**](https://openaccess.thecvf.com/content_iccv_2017/html/Yu_Multi-Modal_Factorized_Bilinear_ICCV_2017_paper.html):
 
 - **MFB Baseline**
 
@@ -74,7 +74,7 @@ _Figure 2. Optimized MFB with Co-Attention network. The MFB with Attention and B
 
 ### 2.2 Dataset and Preprocessing
 
-The dataset considered for this tutorial is the **VQAv2 dataset** (Goyal et al., 2017).  
+The dataset considered for this tutorial is the **VQAv2 dataset** ([Goyal et al., 2017](https://openaccess.thecvf.com/content_cvpr_2017/html/Goyal_Making_the_v_CVPR_2017_paper.html)).  
 Each sample contains:
 
 - An image
@@ -114,9 +114,9 @@ Because the test set does not include ground truth or human-provided answers, al
 
 #### Knowledge Distillation (KD)
 
-Instead of training from scratch, models are trained using **knowledge distillation**:
+Instead of training from scratch, models are trained using **knowledge distillation** ([Hinton et al., 2015](https://arxiv.org/abs/1503.02531)):
 
-**Teacher:** BEiT-3 fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
+**Teacher:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
 
 #### Loss function
 
@@ -146,7 +146,7 @@ Since _yes/no_ answers represent ~40% of the dataset, **sample weights** inverse
 
 ### 2.4 Results and Deployment Analysis
 
-The performance of VQA models is measured by comparing the model’s predicted answers to the human-provided reference answers. Given the model’s predicted answer _a<sub>i</sub>_ for question _i_, and the ten human-provided reference answers, the accuracy of a model is computed as follows:
+The performance of VQA models is measured by comparing the model’s predicted answers to the human-provided reference answers ([Antol et al., 2015](https://openaccess.thecvf.com/content_iccv_2015/html/Antol_VQA_Visual_Question_ICCV_2015_paper.html)). Given the model’s predicted answer _a<sub>i</sub>_ for question _i_, and the ten human-provided reference answers, the accuracy of a model is computed as follows:
 
 <p align="center">
 <img src="Images/Accuracy.png" alt="Loss" width="330"/>
@@ -393,16 +393,12 @@ This section mirrors the theoretical tutorial but provides additional details ab
 
 The folder `models/` contains the file `vqa_models.py`, which defines the implemented model architectures:
 
-- **`MFB_Baseline(...)`**
-  Keras implementation of the modified MFB Baseline model.
-- **`MFB_Attention(...)`**
-  Keras implementation of the modified MFB + Attention model.
-- **`MFB_CoAttention(...)`**
-  Keras implementation of the modified MFB + CoAttention model.
-- **`get_model(config)`**  
-  Utility function that instantiates the correct model given a configuration dictionary.
+- `MFB_Baseline(...)`: Keras implementation of the modified MFB Baseline model.
+- `MFB_Attention(...)`: Keras implementation of the modified MFB + Attention model.
+- `MFB_CoAttention(...)`: Keras implementation of the modified MFB + CoAttention model.
+- `get_model(config)`: Utility function that instantiates the correct model given a configuration dictionary.
 
-Each function returns a fully built **Keras model** (`tf.keras.Model`), with layers and parameters defined according to the provided configuration. While the theoretical section provides high-level block diagrams of the architectures, these functions show the **exact Keras implementation** of each mode.
+Each function returns a fully built **Keras model** (`tf.keras.Model`), with layers and parameters defined according to the provided configuration. While the theoretical section provides high-level block diagrams of the architectures, these functions show the **exact Keras implementation** of each model.
 
 ### 4.2 Dataset and Preprocessing
 
@@ -410,17 +406,19 @@ The folder `data/` contains everything related to dataset handling and preproces
 
 - **Dataset loading**
 
-  - The function `get_vqav2()` in `dataset.py` loads the official VQAv2 JSON files into Pandas DataFrames.
-  - It also applies the **answer normalization** (as described in the theoretical section).
+  - The function `get_vqav2(...)` in `dataset.py` loads the official VQAv2 JSON files into **Pandas DataFrames** and applies **answer normalization** (as described in the theoretical section).
+  - The function `get_filtered_trainval(...)` builds on top of `get_vqav2(...)`: it loads the training and validation sets, filters them to retain only the **top 1000 most frequent answers** in the training set, and returns the filtered splits.
 
 - **Data generators**  
   Defined in `custom_generators.py`. They are implemented as subclasses of `keras.utils.Sequence`, so they can be used directly with `model.fit()`.
-  - `Custom_Generator` (training and evaluation):
-    - Loads and preprocesses images (resize, normalization).
-    - Tokenizes and pads/truncates questions.
-    - One-hot encodes ground-truth answers.
-    - Loads **teacher logits** (if KD is enabled).
-    - Applies **per-sample weighting** for imbalanced answers.
+
+  `Custom_Generator` (training and evaluation):
+
+  - Loads and preprocesses images (resize, normalization).
+  - Tokenizes and pads/truncates questions.
+  - One-hot encodes ground-truth answers.
+  - Loads **teacher logits** (if KD is enabled).
+  - Applies **per-sample weighting** for imbalanced answers.
 
 In practice, these generators handle the entire preprocessing pipeline and supply batches ready for training/evaluation.
 
@@ -428,24 +426,24 @@ In practice, these generators handle the entire preprocessing pipeline and suppl
 
 The training workflow is split across two components:
 
-- **`main_train.py`** (entry point)
+- `main_train.py`:
 
   - Loads the dataset and builds the custom generators.
   - Creates the model (based on the configuration).
-  - Selects the appropriate training routine (`from scratch` or `with KD`).
+  - Selects the appropriate training routine (from scratch or with KD).
   - Saves the trained model and related files into an `outputs/` subfolder.
-  - Evaluates preliminary metrics (accuracy and loss on filtered train/validation sets).
+  - Evaluates preliminary metrics (standard accuracy and loss on filtered train/validation sets).
 
-- **`trainer.py`** (training logic)
-  Provides two functions for the actual training step:
+- `trainer.py`, that provides two functions for the actual training step:
 
-  - **Training from scratch** (`train_from_scratch(...)`)
+  - **Training from scratch** (`train_from_scratch(...)`):
 
     - Calls `model.compile()` with **Adam optimizer** and **cross-entropy loss**.
-    - Defines Keras callbacks – can be customized in this file.
+    - Defines Keras callbacks (callbacks can be customized in this file).
     - Runs `model.fit(...)` and returns the trained model.
 
-  - **Training with Knowledge Distillation (KD)** (`train_with_KD(...)`)
+  - **Training with Knowledge Distillation (KD)** (`train_with_KD(...)`):
+
     - Wraps the model inside a custom `Distiller(keras.Model)` class.
     - Compiles the distiller with:
       - Optimizer: **Adam**
@@ -458,7 +456,7 @@ The training workflow is split across two components:
 
 ### 4.4 Evaluation
 
-The evaluation pipeline is handled by **`main_eval.py`**.  
+The evaluation pipeline is handled by `main_eval.py`.  
 Its tasks are:
 
 - **Obtain model answers**  
@@ -471,8 +469,8 @@ Its tasks are:
 
 ## References
 
-- Z. Yu, J. Yu, J. Fan, and D. Tao, "Multi-modal factorized bilinear pooling with co-attention learning for visual question answering," in _Proceedings of the IEEE international conference on computer vision_, 2017
-- S. Antol, A. Agrawal, J. Lu, M. Mitchell, D. Batra, C. L. Zitnick, and D. Parikh, “Vqa: Visual question answering,” in _Proceedings of the IEEE international conference on computer vision_, 2015,
-- Y. Goyal, T. Khot, D. Summers-Stay, D. Batra, and D. Parikh, “Making the v in vqa matter: Elevating the role of image understanding in visual question answering,” in _Proceedings of the IEEE conference on computer vision and pattern recognition_, 2017
-- W. Wang, H. Bao, L. Dong, J. Bjorck, Z. Peng, Q. Liu, K. Aggarwal, O. K. Mohammed, S. Singhal, S. Som, and F. Wei, “Image as a foreign language: BEiT pretraining for vision and vision-language tasks,” in _Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition_, 2023.
-- G. Hinton, O. Vinyals, and J. Dean, “Distilling the knowledge in a neural network,” 2015.
+- Z. Yu, J. Yu, J. Fan, and D. Tao, **"Multi-modal factorized bilinear pooling with co-attention learning for visual question answering,"** in _Proceedings of the IEEE international conference on computer vision_, 2017
+- S. Antol, A. Agrawal, J. Lu, M. Mitchell, D. Batra, C. L. Zitnick, and D. Parikh, **“Vqa: Visual question answering,”** in _Proceedings of the IEEE international conference on computer vision_, 2015,
+- Y. Goyal, T. Khot, D. Summers-Stay, D. Batra, and D. Parikh, **“Making the v in vqa matter: Elevating the role of image understanding in visual question answering,”** in _Proceedings of the IEEE conference on computer vision and pattern recognition_, 2017
+- W. Wang, H. Bao, L. Dong, J. Bjorck, Z. Peng, Q. Liu, K. Aggarwal, O. K. Mohammed, S. Singhal, S. Som, and F. Wei, **“Image as a foreign language: BEiT pretraining for vision and vision-language tasks,”** in _Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition_, 2023.
+- G. Hinton, O. Vinyals, and J. Dean, **“Distilling the knowledge in a neural network,”** 2015.
