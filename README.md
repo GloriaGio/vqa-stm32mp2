@@ -238,7 +238,7 @@ pip install -r requirements.txt
 
 #### Using pre-trained models
 
-If you want to try or use models trained in this tutorial instead of training yourself, download the files from [this Drive link](https://drive.google.com/drive/folders/1iK-X6BriZnWhiYlnYmqM-lG5ooZXPkES?usp=drive_link) and place them in the `outputs` folder.
+If you want to try or use the models trained in this tutorial instead of training yourself, download the files from [this Drive link](https://drive.google.com/drive/folders/1iK-X6BriZnWhiYlnYmqM-lG5ooZXPkES?usp=drive_link) and place them in the `outputs` folder.
 
 ```
 outputs/
@@ -353,10 +353,12 @@ where:
 
 After evaluation, the code will save:
 
-- a JSON file with the evaluation metrics (accuracy per question tupe and overall accuracy)
+- a JSON file with the evaluation metrics (accuracy per question type and overall accuracy)
 - a JSON file containing each question ID along with the answer predicted by the model.
 
 ### 3.5 Inference
+
+The script processes the question and image through the selected VQA model and prints the predicted answer to the console.
 
 ```bash
 python inference.py --model-dir MFBBaseline --question "..." --image-path ....
@@ -368,9 +370,9 @@ where:
 - `--question` is the natural language question to ask about the image,
 - `--image-path` is the path to the image file.
 
-The script processes the question and image through the selected VQA model and prints the predicted answer to the console.
-
 ### 3.6 TFLite Conversion
+
+The script converts the Keras model to TFLite format, applying per-tensor quantization. The resulting .tflite model is saved in the same folder as the original model.
 
 ```bash
 python convert.py --model-dir MFBBaseline
@@ -379,8 +381,6 @@ python convert.py --model-dir MFBBaseline
 where:
 
 - `--model-dir` specifies the folder containing the trained model.
-
-The script converts the Keras model to TFLite format, applying per-tensor quantization. The resulting .tflite model is saved in the same folder as the original model.
 
 ---
 
