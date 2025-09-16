@@ -238,7 +238,7 @@ pip install -r requirements.txt
 
 #### Using pre-trained models
 
-If you want to try or use models trained in this tutorial instead of training yourself, download the files from [this Drive link] and place them in the `outputs` folder.
+If you want to try or use models trained in this tutorial instead of training yourself, download the files from [this Drive link](https://drive.google.com/drive/folders/1iK-X6BriZnWhiYlnYmqM-lG5ooZXPkES?usp=drive_link) and place them in the `outputs` folder.
 
 ```
 outputs/
@@ -386,7 +386,86 @@ The script converts the Keras model to TFLite format, applying per-tensor quanti
 
 ## 4. Code Details
 
-**Nota:** entro meglio nel codice... **ANZI DIREI DI NO, ma vediamo va, al massimo su come sia strutturato il codice, quale script faccia cosa, con particolare attenzione a quelli più importanti**
+The repository uses **Keras** as the deep learning framework.  
+This section mirrors the theoretical tutorial but provides additional details about the code implementation.
+
+### 4.1 Model Architectures
+
+The folder `models/` contains the file `vqa_models.py`, which defines the implemented model architectures:
+
+- **`MFB_Baseline(...)`**
+  Keras implementation of the modified MFB Baseline model.
+- **`MFB_Attention(...)`**
+  Keras implementation of the modified MFB + Attention model.
+- **`MFB_CoAttention(...)`**
+  Keras implementation of the modified MFB + CoAttention model.
+- **`get_model(config)`**  
+  Utility function that instantiates the correct model given a configuration dictionary.
+
+Each function returns a fully built **Keras model** (`tf.keras.Model`), with layers and parameters defined according to the provided configuration. While the theoretical section provides high-level block diagrams of the architectures, these functions show the **exact Keras implementation** of each mode.
+
+### 4.2 Dataset and Preprocessing
+
+The folder `data/` contains everything related to dataset handling and preprocessing.
+
+- **Dataset loading**
+
+  - The function `get_vqav2()` in `dataset.py` loads the official VQAv2 JSON files into Pandas DataFrames.
+  - It also applies the **answer normalization** (as described in the theoretical section).
+
+- **Data generators**  
+  Defined in `custom_generators.py`. They are implemented as subclasses of `keras.utils.Sequence`, so they can be used directly with `model.fit()`.
+  - `Custom_Generator` (training and evaluation):
+    - Loads and preprocesses images (resize, normalization).
+    - Tokenizes and pads/truncates questions.
+    - One-hot encodes ground-truth answers.
+    - Loads **teacher logits** (if KD is enabled).
+    - Applies **per-sample weighting** for imbalanced answers.
+
+In practice, these generators handle the entire preprocessing pipeline and supply batches ready for training/evaluation.
+
+### 4.3 Training Procedure
+
+The training workflow is split across two components:
+
+- **`main_train.py`** (entry point)
+
+  - Loads the dataset and builds the custom generators.
+  - Creates the model (based on the configuration).
+  - Selects the appropriate training routine (`from scratch` or `with KD`).
+  - Saves the trained model and related files into an `outputs/` subfolder.
+  - Evaluates preliminary metrics (accuracy and loss on filtered train/validation sets).
+
+- **`trainer.py`** (training logic)
+  Provides two functions for the actual training step:
+
+  - **Training from scratch** (`train_from_scratch(...)`)
+
+    - Calls `model.compile()` with **Adam optimizer** and **cross-entropy loss**.
+    - Defines Keras callbacks – can be customized in this file.
+    - Runs `model.fit(...)` and returns the trained model.
+
+  - **Training with Knowledge Distillation (KD)** (`train_with_KD(...)`)
+    - Wraps the model inside a custom `Distiller(keras.Model)` class.
+    - Compiles the distiller with:
+      - Optimizer: **Adam**
+      - Losses: **cross-entropy** (student) + **KL divergence** (distillation)
+      - KD parameters: `alpha` and `T` (from config or command line).
+    - Runs `distiller.fit(...)` to train the student model.
+    - Returns the trained student model (not the distiller).
+
+  Both functions handle validation during training and return a trained model.
+
+### 4.4 Evaluation
+
+The evaluation pipeline is handled by **`main_eval.py`**.  
+Its tasks are:
+
+- **Obtain model answers**  
+  For the selected dataset split (`train2014` or `val2014`), answers are either loaded from a pre-computed file inside the model folder, or computed using the model and saved for future runs.
+- **Compute accuracy**  
+  Model answers are compared with the 10 human annotators’ answers. Accuracy is computed as described in Section 2.4, both **overall** and **per answer type**.
+- **Save results** as JSON file in the model folder.
 
 ---
 
