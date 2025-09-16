@@ -112,6 +112,6 @@ if __name__ == "__main__":
 
     # Load used configuration from JSON file
     used_config = load_config(saving_folder / "used_config.json")
-    used_config["paths"]["saving_folder"] = saving_folder
+    used_config["paths"] = {"saving_folder": saving_folder}
 
     ans = inference(question, image_path, used_config, verbose=True)

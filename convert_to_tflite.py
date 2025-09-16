@@ -41,14 +41,6 @@ def TFLconversion(config):
     model_path = config["paths"]["saving_folder"] / f"trained_{arch}.keras"
     model = keras.models.load_model(model_path)
 
-    im_size = config["model"]["image_size"]
-    num_words = config["model"]["num_vocab_words"]
-    num_channels = config["model"]["num_channels"]
-    maxlen = config["model"]["max_length"]
-    """dummy_image = np.random.randint(0, 256, (1, im_size, im_size, num_channels)) / 255.0
-    dummy_quest = np.random.randint(1, num_words, (1, maxlen))
-    pred = model.predict([dummy_quest, dummy_image])"""
-
     # Load tokenizer
     if config["model"]["min_frequency"] > 0:
         mf = config["model"]["min_frequency"]
@@ -66,14 +58,15 @@ def TFLconversion(config):
         keep_10ans=False,
         verbose=True,
     )
-    df_train500 = df_train[["quesion", "image_name"]].sample(500, random_state=123)
+    df_train500 = df_train[["question", "image_name"]].sample(500, random_state=123)
     questions = list(df_train500["question"])
     images = list(df_train500["image_name"])
 
     # Representative dataset generator for post-training quantization
     def representative_data_gen():
-        for q, im_name in zip(questions, images):
-            tok_question = tokenizer.texts_to_sequences([])[0]
+        for quest, im_name in zip(questions, images):
+            tok_question = tokenizer.texts_to_sequences([quest])[0]
+            tok_question = np.expand_dims(tok_question, axis=0)
 
             image_path = config["paths"]["dataset_path"] / "train2014" / im_name
             if config["model"]["num_channels"] == 1:
@@ -89,9 +82,12 @@ def TFLconversion(config):
             image = image.astype(dtype="float32") / 255.0 * 2 - 1
             image = np.expand_dims(image, axis=0)
 
-            yield [tok_question, image]
+            yield [tok_question.astype(np.float32), image.astype(np.float32)]
 
     # Define a concrete function to fix input shapes (batch size = 1)
+    im_size = config["model"]["image_size"]
+    num_channels = config["model"]["num_channels"]
+    maxlen = config["model"]["max_length"]
     @tf.function(
         input_signature=[
             tf.TensorSpec(shape=(1, maxlen), dtype=tf.float32),
