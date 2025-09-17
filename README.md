@@ -3,7 +3,7 @@
 ## 1. Introduction
 
 This repository provides a hands-on tutorial, on how to design and train **Visual Question Answering (VQA)** models for **resource-constrained edge devices**, specifically the **STM32MP2 platform**. The code is written in **Python** and the models are implemented in **Keras**.
-By following this tutorial, you will obtain a fully trained VQA model that is optimized for the STM32MP2 platform and can leverage its NPU for efficient inference.
+By following this tutorial, you will obtain fully trained VQA models that are optimized for the STM32MP2 platform and can leverage its NPU for efficient inference.
 
 The workflow includes:
 
@@ -16,7 +16,7 @@ This README is structured as follows:
 
 - **Tutorial** – overview of the model architectures, dataset preparation, and training procedure, providing all the necessary information to reproduce the VQA models adapted to STM32MP2.
 - **Usage** – instructions on how to install, train, and evaluate the models.
-- **Code Details** – overview of the repository structure and implementation.
+- **Code Details** – additional details about the code implementation.
 
 ---
 
@@ -41,11 +41,11 @@ The implemented models are based on the architectures proposed by [**Yu et al. (
 - **MFB + Attention**
 
   - Same as Baseline, with an **attention mechanism over image features**.
-  - Uses two MFB modules in sequence.
+  - Uses two MFB modules, one before and one after the attention.
 
 - **MFB + CoAttention**
   - Most powerful variant according to Yu et al. (2017).
-  - Same as MFB + Attention, but applies **attention over both image and question features**.
+  - Same as MFB + Attention, but also applies **attention over question features**.
 
 #### Optimizations for STM32MP2
 
@@ -53,7 +53,6 @@ The original architectures were modified to make them efficient on the STM32MP2 
 
 - **ResNet-152 → MobileNet V3 Large**
   - Lighter, optimized for edge devices.
-- **Word embeddings**: concatenation of **pretrained GloVe embeddings** and **learned embeddings**
 - **LSTM → Block of Temporal Convolutional Layers (TCLs)**
   - Faster and hardware-friendly sequence modeling.
 - **MFB module simplification**
@@ -61,7 +60,12 @@ The original architectures were modified to make them efficient on the STM32MP2 
   - Sum pooling → average pooling
   - Parameters: `k = 5`, `o = 1024`
 
-Result: efficient models suitable for deployment on edge devices.
+Additional improvements:
+
+- **Word embeddings**: concatenation of **pretrained GloVe embeddings** and **learned embeddings**
+  - Introduced to improve semantic representation and boost model performance.
+
+**Resulting architectures**: efficient and suitable for deployment on edge devices.
 
 ![MFBCoAttention Architecture](Images/MFBCoAttention.png)
 
@@ -91,7 +95,7 @@ Dataset: [VQAv2 official website](https://visualqa.org/)
 | Validation | 214,354   | 40,504 |
 | Test       | 447,793   | 81,434 |
 
-Because the test set does not include ground truth or human-provided answers, all evaluations in this tutorial were carried out on the validation set.
+Because the test set does not include ground truth or human-provided answers, **all evaluations in this tutorial were carried out on the validation set.**
 
 #### Answer preprocessing
 
@@ -116,14 +120,14 @@ Because the test set does not include ground truth or human-provided answers, al
 
 Instead of training from scratch, models are trained using **knowledge distillation** ([Hinton et al., 2015](https://arxiv.org/abs/1503.02531)):
 
-**Teacher:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
+**Teacher model:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
 
 #### Loss function
 
 The loss combines two terms:
 
 - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
-- **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) & student logits (_s_).
+- **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
 
 <p align="center">
 <img src="Images/Loss.png" alt="Loss" width="330"/>
@@ -154,21 +158,28 @@ The performance of VQA models is measured by comparing the model’s predicted a
 
 where _N_ is the number of questions and _count(a<sub>i</sub>)_ denotes the number of annotators who provided the answer _a<sub>i</sub>_ to question _i_.
 
-#### VQA Performance
+#### VQA Performance (Overall and fby Answer Type)
+
+We report the accuracy both overall and split by answer type:
+
+- **Overall**: accuracy across the full validation set
+- **Yes/No**: accuracy for Yes/No questions
+- **Number**: accuracy when the expected answer is a number
+- **Other**: accuracy for all remaining cases
 
 | Model        | #Params | Overall (%) | Yes/No (%) | Number (%) | Other (%) |
 | ------------ | ------- | ----------- | ---------- | ---------- | --------- |
 | MFB Baseline | 24.4M   | 56.0        | 76.7       | 36.5       | 45.4      |
-| MFB + Att.   | 40.4M   | 57.0        | 77.7       | 37.2       | 46.5      |
+| MFB + Att.   | 40.4M   | **57.0**    | **77.7**   | **37.2**   | **46.5**  |
 | MFB + CoAtt. | 51.2M   | 56.4        | 76.9       | 36.8       | 46.1      |
 
-The best-performing model is **MFB + Attention**, which we also deployed on the STM32MP2 platform.
+The best-performing model is **MFB + Attention**, which was then deployed on the STM32MP2 platform.
 
 #### STM32MP2 Inference Performance
 
 | Model      | Execution Device | Inference time (ms) | Power (W) |
 | ---------- | ---------------- | ------------------- | --------- |
-| MFB + Att. | GPU/NPU          | 56                  | 0.75      |
+| MFB + Att. | GPU/NPU          | **56**              | **0.75**  |
 | MFB + Att. | CPU              | 434                 | 0.80      |
 
 The results show that **MFB + Attention** achieves efficient inference on STM32MP2, with significantly faster execution and lower power consumption when using the GPU/NPU compared to CPU execution.
@@ -214,7 +225,7 @@ Before running the code, make sure to download and place the required external r
      - `answer2label.txt` contains one dictionary per line with keys `answer` and `label`. It maps each possible teacher answer to its corresponding label, which indicates the index of the answer in the logits output of the teacher model.
      - Each `question_id.json` file contains a dictionary with question-related information (question ID, image ID, ground truth answer, model answer, etc.) and a `logits` key containing the teacher model output logits.
 
-   - **Optional:** If teacher logits are not available, you can still train the model from scratch by adjusting the configuration file accordingly.
+   - **Optional:** If teacher logits are not available, you can still train the model from scratch by adjusting the configuration file accordingly (see Section 3.3).
 
 3. **GloVe embeddings**
 
@@ -224,26 +235,26 @@ Before running the code, make sure to download and place the required external r
      data/
       └── glove.6B
      ```
-   - **Optional:** you can still train the model without GloVe embeddings by adjusting the configuration file accordingly.
+   - **Optional:** you can still train the model without GloVe embeddings by adjusting the configuration file accordingly (see Section 3.3).
 
 ### 3.2 Installation
 
 Clone the repository and install the required Python packages:
 
 ```bash
-git clone https://github.com/username/vqa-stm32mp2.git
+git clone https://github.com/GloriaGio/vqa-stm32mp2.git
 cd vqa-stm32mp2
 pip install -r requirements.txt
 ```
 
-#### Using pre-trained models
+#### Using the provided trained models
 
-If you want to try or use the models trained in this tutorial instead of training yourself, download the files from [this Drive link](https://drive.google.com/drive/folders/1iK-X6BriZnWhiYlnYmqM-lG5ooZXPkES?usp=drive_link) and place them in the `outputs` folder.
+If you want to try or use the models already trained in this tutorial instead of training yourself, download the files from [this Drive link](https://drive.google.com/drive/folders/1iK-X6BriZnWhiYlnYmqM-lG5ooZXPkES?usp=drive_link) and place them in the `outputs` folder.
 
 ```
 outputs/
   ├── MFBBaseline/
-  │   ├── used_config.json              # configuration used for trainig
+  │   ├── used_config.json              # configuration used for trainig (as described in Section 2)
   │   ├── trained_MFBBaseline.keras     # trained model in Keras format
   │   ├── trained_MFBBaseline.tflite    # trained model in TFLite format
   │   └── val2014_accuracy.json         # accuracy on validation set
@@ -269,7 +280,7 @@ This file contains three sections: **model**, **training**, and **paths**.
 The file can be edited manually with any text editor.  
 At runtime, values in `config.json` are loaded as defaults.
 
-> ⚠️ Parameters provided via command-line arguments (e.g. `--model-arch`, `--epochs`) will **override** the corresponding values in `config.json`.
+> ⚠️ Parameters provided via command-line arguments (e.g. `--model-arch`, `--epochs`) will **override** the corresponding values in `config.json` (see Section 3.4).
 
 #### Model parameters
 
@@ -280,7 +291,7 @@ At runtime, values in `config.json` are loaded as defaults.
 - `image_size`: size of the input images (e.g. `224` for `224×224`).
 - `num_channels`: number of image channels (`3` = RGB, `1` = grayscale).
 - `num_classes`: number of possible answers (the model classifies among this set).
-- `consider_teacher`: (`true`/`false`) whether to restrict answers to those used by the teacher model (useful for knowledge distillation or for comparing models trained with and without KD). **Set to `false` if you don't want to use knowledge distillation.**
+- `consider_teacher`: (`true`/`false`) whether to restrict answers to those used by the teacher model (useful for knowledge distillation or for comparing models trained with and without KD on the same set of answers). **Set to `false` if you don't want to use knowledge distillation.**
 - `k_window`: hyperparameter _k_ of the MFB module.
 - `output_MFB`: hyperparameter _o_ of the MFB module.
 - `num_attention_glimps`: number of attention glimpses (outputs are concatenated after Global Avg Pooling).
@@ -294,9 +305,9 @@ At runtime, values in `config.json` are loaded as defaults.
 - `lr`: learning rate.
 - `batch_size`: batch size for training.
 - `alpha`: balancing coefficient for KD loss.
-- `temperature`: softmax temperature for KD.
-- `knowledge_distillation`: (`true`/`false`) whether to use KD during training. If `consider_teacher` is `false` than `knowledge_distillation` is set to false too. If `consider_teacher = true, knowledge_distillation = false` answers are restricted to those used by the teacher model, but KD is not used for training.
-- `restore_best_weights`: (`true`/`false`) whether to restore the best model (based on validation set performance) or keep the final epoch model.
+- `temperature`: softmax temperature (T) for KD.
+- `knowledge_distillation`: (`true`/`false`) whether to use KD during training. If `consider_teacher` is `false` than `knowledge_distillation` is set to false too. If `consider_teacher = true, knowledge_distillation = false` answers are restricted to those used by the teacher model, but models are trained from scratch.
+- `restore_best_weights`: (`true`/`false`) whether to restore the best model (based on validation loss) or keep the final epoch model.
 
 #### Paths
 
@@ -305,7 +316,7 @@ At runtime, values in `config.json` are loaded as defaults.
 - `KD_path`: path to teacher logits (used if KD is enabled, e.s. `...data/teacher_logits`).
 - `output_path`: output folder where trained models, configs, and results are saved (e.s. `outputs`).
 
-### 3.3 Training a model
+### 3.4 Training a model
 
 To train a VQA model, you need to first configure the training parameters in the `config.json` file.
 
@@ -337,9 +348,9 @@ At the end of the training, a new folder will be created in `outputs` folder con
 
 - the **trained model** saved in `.keras` format,
 - the **configuration file** used for training, updated to reflect any parameter changes made via command-line arguments or automatic adjustments for incompatible values,
-- a JSON file with **preliminary performance metrics** (training/validation accuracy and loss on filtered dataset).
+- a JSON file with **preliminary performance metrics** (training/validation standard accuracy and loss on filtered dataset).
 
-### 3.4 Evaluation
+### 3.5 Evaluation
 
 ```bash
 python main_eval.py --model-dir MFBBaseline --split val2014 --batch-size 32
@@ -356,12 +367,12 @@ After evaluation, the code will save:
 - a JSON file with the evaluation metrics (accuracy per question type and overall accuracy)
 - a JSON file containing each question ID along with the answer predicted by the model.
 
-### 3.5 Inference
+### 3.6 Inference
 
 The script processes the question and image through the selected VQA model and prints the predicted answer to the console.
 
 ```bash
-python inference.py --model-dir MFBBaseline --question "..." --image-path ....
+python inference.py --model-dir MFBBaseline --question "What is this?" --image-path ...data/vqa_dataset/val2014/COCO_val2014_000000002006.jpg
 ```
 
 where:
@@ -370,7 +381,7 @@ where:
 - `--question` is the natural language question to ask about the image,
 - `--image-path` is the path to the image file.
 
-### 3.6 TFLite Conversion
+### 3.7 TFLite Conversion
 
 The script converts the Keras model to TFLite format, applying per-tensor quantization. The resulting .tflite model is saved in the same folder as the original model.
 
@@ -393,9 +404,9 @@ This section mirrors the theoretical tutorial but provides additional details ab
 
 The folder `models/` contains the file `vqa_models.py`, which defines the implemented model architectures:
 
-- `MFB_Baseline(...)`: Keras implementation of the modified MFB Baseline model.
-- `MFB_Attention(...)`: Keras implementation of the modified MFB + Attention model.
-- `MFB_CoAttention(...)`: Keras implementation of the modified MFB + CoAttention model.
+- `MFB_Baseline(...)`: Keras implementation of the modified **MFB Baseline** model.
+- `MFB_Attention(...)`: Keras implementation of the modified **MFB + Attention** model.
+- `MFB_CoAttention(...)`: Keras implementation of the modified **MFB + CoAttention** model.
 - `get_model(config)`: Utility function that instantiates the correct model given a configuration dictionary.
 
 Each function returns a fully built **Keras model** (`tf.keras.Model`), with layers and parameters defined according to the provided configuration. While the theoretical section provides high-level block diagrams of the architectures, these functions show the **exact Keras implementation** of each model.
@@ -444,11 +455,12 @@ The training workflow is split across two components:
 
   - **Training with Knowledge Distillation (KD)** (`train_with_KD(...)`):
 
-    - Wraps the model inside a custom `Distiller(keras.Model)` class.
+    - Wraps the model inside a custom `Distiller(keras.Model)` class (see [Keras KD Code Examples](https://keras.io/examples/)).
     - Compiles the distiller with:
       - Optimizer: **Adam**
       - Losses: **cross-entropy** (student) + **KL divergence** (distillation)
-      - KD parameters: `alpha` and `T` (from config or command line).
+      - KD parameters: `alpha` and `T` (from config).
+    - Defines Keras callbacks (callbacks can be customized in this file).
     - Runs `distiller.fit(...)` to train the student model.
     - Returns the trained student model (not the distiller).
 
