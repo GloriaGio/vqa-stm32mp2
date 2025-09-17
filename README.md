@@ -304,7 +304,7 @@ At runtime, values in `config.json` are loaded as defaults.
 - `num_epochs`: number of training epochs.
 - `lr`: learning rate.
 - `batch_size`: batch size for training.
-- `alpha`: balancing coefficient for KD loss.
+- `alpha`: balancing coefficient (α) for KD loss.
 - `temperature`: softmax temperature (T) for KD.
 - `knowledge_distillation`: (`true`/`false`) whether to use KD during training. If `consider_teacher` is `false` than `knowledge_distillation` is set to false too. If `consider_teacher = true, knowledge_distillation = false` answers are restricted to those used by the teacher model, but models are trained from scratch.
 - `restore_best_weights`: (`true`/`false`) whether to restore the best model (based on validation loss) or keep the final epoch model.
