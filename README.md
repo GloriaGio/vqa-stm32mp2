@@ -8,8 +8,19 @@ This repository provides a hands-on tutorial, on how to design, train and evalua
 
 Models in this tutorial are implemented in **Keras**, optimized for **TensorFlow Lite**, and can leverage the STM32MP2 **NPU** for efficient inference.
 
+### Requirements
+
+- **Python 3.9**
+- Other dependencies are listed in [`requirements.txt`](./requirements.txt)
+
+---
+
 This README is structured as follows:
-...**da fare**
+
+- Section 2: Quickstart
+- Section 3: Tutorial (models, dataset, training)
+- Section 4: Usage Guide
+- Section 5: Configuration and Advanced Options
 
 ---
 
@@ -23,7 +34,6 @@ Try inference in 3 steps:
 git clone https://github.com/GloriaGio/vqa-stm32mp2.git
 cd vqa-stm32mp2
 pip install -r requirements.txt
-pip install gdown
 ```
 
 2. Download a pretrained model (MFB + Attention)
@@ -145,7 +155,6 @@ Clone the repository and install the required Python packages:
 git clone https://github.com/GloriaGio/vqa-stm32mp2.git
 cd vqa-stm32mp2
 pip install -r requirements.txt
-pip install gdown
 ```
 
 #### Using the provided trained models
@@ -258,13 +267,13 @@ resources/teacher_logits/
 
 ### 4.3 Training a Model
 
-With Knowledge Distillation
+**With Knowledge Distillation**
 
 ```bash
 python main_train.py --model-arch MFBBaseline --batch-size 32
 ```
 
-From scratch
+**From scratch**
 
 ```bash
 python main_train.py --model-arch MFBBaseline --batch-size 32 --disable-KD
@@ -326,7 +335,7 @@ The .tflite file will be saved in the same folder as the original model.
 
 ---
 
-## 5. Cambiare file config per avere modello diverso
+## 5. Configuration and Advanced Options
 
 ...
 
