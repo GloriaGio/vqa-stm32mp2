@@ -28,9 +28,9 @@
     },
     "paths":
     {
-        "dataset_path": "/home/vulkan/Desktop/VQA/vqa_dataset",
-        "glove_path": "/home/vulkan/Desktop/VQA/glove.6B",
-        "KD_path":  "/home/vulkan/Desktop/VQA/KD",
+        "dataset_path": "vqa_dataset",
+        "glove_path": "resources/glove.6B",
+        "KD_path":  "resources/teacher_logits",
         "output_path": "outputs"
     }
 }

@@ -20,22 +20,23 @@ Try inference in 3 steps:
 1. Clone the repo and install dependencies
 
 ```bash
-git clone https://github.com/<your-username>/vqa-stm32mp2.git
+git clone https://github.com/GloriaGio/vqa-stm32mp2.git
 cd vqa-stm32mp2
 pip install -r requirements.txt
+pip install gdown
 ```
 
 2. Download a pretrained model (MFB + Attention)
 
 ```bash
-wget "https://docs.google.com/uc?export=download&id=1UKBwet_hAm7OCmrRjfhFd6aKOceJWKYY" -O outputs/MFBAttention.zip
+gdown "https://docs.google.com/uc?export=download&id=1UKBwet_hAm7OCmrRjfhFd6aKOceJWKYY" -O outputs/MFBAttention.zip
 unzip outputs/MFBAttention.zip -d outputs/
 ```
 
 3. Run inference on an image
 
 ```bash
-python --model-dir MFBAttention --question "What is this?" --image-path ./Images/COCO_val2014_000000002006.jpg
+python inference.py --model-dir MFBAttention --question "What is this?" --image-path ./Images/COCO_val2014_000000002006.jpg
 ```
 
 ---
@@ -109,12 +110,12 @@ The folder `data/` contains everything related to dataset handling and preproces
   The function `get_vqav2(...)` in `dataset.py` loads the official VQAv2 JSON files into **Pandas DataFrames** and applies **answer normalization**.
 
 ```python
-from data.vqa_dataset import get_vqav2
+from data.dataset import get_vqav2
 from pathlib import Path
 
 split = "train2014" # ("val2014" to get the validation set)
-dataset_path = Path("data/vqa_dataset")
-df_train = get_vqav2(dataset_path, split="train2014")
+dataset_path = Path("vqa_dataset")
+df_train = get_vqav2(dataset_path, split=split)
 ```
 
 - **Data generators**
@@ -144,75 +145,76 @@ Clone the repository and install the required Python packages:
 git clone https://github.com/GloriaGio/vqa-stm32mp2.git
 cd vqa-stm32mp2
 pip install -r requirements.txt
+pip install gdown
 ```
 
 #### Using the provided trained models
 
-If you want to try or use the models already trained in this tutorial instead of training yourself, download the files from [this Drive link](https://drive.google.com/drive/folders/1iK-X6BriZnWhiYlnYmqM-lG5ooZXPkES?usp=drive_link):
+If you want to try the models already trained in this tutorial instead of training them yourself, download them from [this Drive link](https://drive.google.com/drive/folders/1iK-X6BriZnWhiYlnYmqM-lG5ooZXPkES?usp=drive_link):
 
-MFB Baseline:
+**MFB Baseline**
 
 ```bash
-wget "https://docs.google.com/uc?export=download&id=1Ivj29hy3jt_7cH3Vs35f4s_Xp-p-Zzdw" -O outputs/MFBBaseline.zip
+gdown "https://docs.google.com/uc?export=download&id=1Ivj29hy3jt_7cH3Vs35f4s_Xp-p-Zzdw" -O outputs/MFBBaseline.zip
 unzip outputs/MFBBaseline.zip -d outputs/
 ```
 
-MFB + Attention:
+**MFB + Attention**
 
 ```bash
-wget "https://docs.google.com/uc?export=download&id=1UKBwet_hAm7OCmrRjfhFd6aKOceJWKYY" -O outputs/MFBAttention.zip
+gdown "https://docs.google.com/uc?export=download&id=1UKBwet_hAm7OCmrRjfhFd6aKOceJWKYY" -O outputs/MFBAttention.zip
 unzip outputs/MFBAttention.zip -d outputs/
 ```
 
-MFB + CoAttention:
+**MFB + CoAttention**
 
 ```bash
-wget "https://docs.google.com/uc?export=download&id=1VAcbNO1LiWoQ9AScALoQFqZiSIeJ0czP" -O outputs/MFBCoAttention.zip
+gdown "https://docs.google.com/uc?export=download&id=1VAcbNO1LiWoQ9AScALoQFqZiSIeJ0czP" -O outputs/MFBCoAttention.zip
 unzip outputs/MFBCoAttention.zip -d outputs/
 ```
 
 ### 4.2 Data Setup and External Resources
 
-Before running the code for training or evaluation, make sure to download and place the required external resources in the appropriate folders:
+Before running training or evaluation, download and place the required external resources in the appropriate folders.
 
-1. **VQAv2 Dataset**
+#### 1. VQAv2 Dataset
 
-   Download the dataset from the [VQAv2 official website](https://visualqa.org/download.html).
+Download the dataset from the [VQAv2 official website](https://visualqa.org/download.html).
 
-   Training and validation questions:
-
-```bash
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Train_mscoco.zip" -O data/v2_Questions_Train_mscoco.zip
-unzip data/v2_Questions_Train_mscoco.zip -d data/
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Val_mscoco.zip" -O data/v2_Questions_Val_mscoco.zip
-unzip data/v2_Questions_Val_mscoco.zip -d data/
-```
-
-Training and validation annotations:
+**Questions**
 
 ```bash
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Train_mscoco.zip" -O data/v2_Annotations_Train_mscoco.zip
-unzip data/v2_Annotations_Train_mscoco.zip -d data/
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Val_mscoco.zip" -O data/v2_Annotations_Val_mscoco.zip
-unzip data/v2_Annotations_Val_mscoco.zip -d data/
+wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Train_mscoco.zip" -O vqa_dataset/v2_Questions_Train_mscoco.zip
+unzip vqa_dataset/v2_Questions_Train_mscoco.zip -d vqa_dataset/
+wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Val_mscoco.zip" -O vqa_dataset/v2_Questions_Val_mscoco.zip
+unzip vqa_dataset/v2_Questions_Val_mscoco.zip -d vqa_dataset/
 ```
 
-Training and validation images:
+**Annotations**
 
 ```bash
-wget "http://images.cocodataset.org/zips/train2014.zip" -O data/train2014.zip
-unzip data/train2014.zip -d data/
+wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Train_mscoco.zip" -O vqa_dataset/v2_Annotations_Train_mscoco.zip
+unzip vqa_dataset/v2_Annotations_Train_mscoco.zip -d vqa_dataset/
+wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Val_mscoco.zip" -O vqa_dataset/v2_Annotations_Val_mscoco.zip
+unzip vqa_dataset/v2_Annotations_Val_mscoco.zip -d vqa_dataset/
+```
+
+**Images**
+
+```bash
+wget "http://images.cocodataset.org/zips/train2014.zip" -O vqa_dataset/train2014.zip
+unzip vqa_dataset/train2014.zip -d dvqa_dataset/
 ```
 
 ```bash
-wget "http://images.cocodataset.org/zips/val2014.zip" -O data/val2014.zip
-unzip data/val2014.zip -d data/
+wget "http://images.cocodataset.org/zips/val2014.zip" -O vqa_dataset/val2014.zip
+unzip vqa_dataset/val2014.zip -d vqa_dataset/
 ```
 
-Once downloaded, the files and images should be organized as follows:
+**Final structure**
 
 ```
-data/vqa_dataset/
+vqa_dataset/
     ├── train2014/
     ├── val2014/
     ├── v2_mscoco_train2014_annotations.json
@@ -221,25 +223,25 @@ data/vqa_dataset/
     └── v2_OpenEnded_mscoco_val2014_questions.json
 ```
 
-2. **GloVe embeddings**
+#### 2. GloVe Embeddings
 
-Download GloVe embeddings (i.e., `glove.6B.zip`) from [GloVe site](https://nlp.stanford.edu/projects/glove/).
+Download GloVe embeddings (i.e., `glove.6B.zip`) from [the official site](https://nlp.stanford.edu/projects/glove/).
 
 ```bash
-wget "https://nlp.stanford.edu/data/glove.6B.zip" -O data/glove.6B.zip
-unzip data/glove.6B.zip -d data/glove.6B/
+wget "https://nlp.stanford.edu/data/glove.6B.zip" -O resources/glove.6B.zip
+unzip resources/glove.6B.zip -d resources/glove.6B/
 ```
 
-**Optional:** you can still train the model without GloVe embeddings by adjusting the configuration file accordingly (see Section 5.).
+**Optional:** you can still train without GloVe embeddings by adjusting the configuration file (see Section 5).
 
-3. **Teacher model logits (for Knowledge Distillation)**
+#### 3. Teacher Model Logits (for Knowledge Distillation)
 
-Precomputed logits from the BEiT-3 teacher model (or any other teacher model) are required if you want to train using knowledge distillation (KD).
+Precomputed logits from the BEiT-3 teacher model (or another teacher) are required if you want to use knowledge distillation (KD).
 
-Save them in a folder structure like this:
+Expected folder structure:
 
 ```
-data/teacher_logits/
+resources/teacher_logits/
     ├── answer2label.txt
     ├── train_logits/
     │   ├── question_id.json
@@ -249,71 +251,78 @@ data/teacher_logits/
         └── ...
 ```
 
-- `answer2label.txt` contains one dictionary per line with keys `answer` and `label`. It maps each possible teacher answer to its corresponding label, which indicates the index of the answer in the logits output of the teacher model.
-- Each `question_id.json` file contains a dictionary with question-related information (question ID, image ID, ground truth answer, model answer, etc.) and a `logits` key containing the teacher model output logits.
+- `answer2label.txt`: maps each possible answer to its index in the teacher’s logits.
+- Each `question_id.json`: contains question metadata and a `logits` key with the teacher model outputs.
 
-- **Optional:** If teacher logits are not available, **you can still train the model from scratch** (see Section 3.3).
+**Optional:** If teacher logits are not available, **you can still train the model from scratch** (see Section 4.3).
 
-### 3.3 Training a model
+### 4.3 Training a Model
 
-1. Train using knowledge distillation:
+With Knowledge Distillation
 
 ```bash
 python main_train.py --model-arch MFBBaseline --batch-size 32
 ```
 
-Use `--model-arch` to specify the architecture to use: MFBBaseline, MFBAttention, or MFBCoAttention. Change the batch size with `--batch-size`.
-
-2. Training from scratch:
+From scratch
 
 ```bash
 python main_train.py --model-arch MFBBaseline --batch-size 32 --disable-KD
 ```
 
-At the end of the training, a new folder will be created in `outputs` folder containing:
+Arguments:
 
-- the **trained model** saved in `.keras` format,
-- the **configuration file** used for training,
-- a JSON file with **preliminary performance metrics** (training/validation standard accuracy and loss on filtered dataset).
+- `--model-arch`: choose the architecture (`MFBBaseline`, `MFBAttention`, or `MFBCoAttention`)
+- `--batch-size`: set the batch size (default: 32).
 
-### 3.4 Evaluation
+After training, a new folder will appear in `outputs/` containing:
+
+- the trained model (`.keras` format),
+- the training configuration file,
+- JSON file with preliminary performance metrics (training/validation accuracy and loss on filtered dataset).
+
+### 4.4 Evaluation
+
+Evaluate a trained model:
 
 ```bash
 python main_eval.py --model-dir MFBBaseline --split val2014 --batch-size 32
 ```
 
-where:
+Arguments:
 
-- `--model-dir` specifies the folder containing the trained model (created during training),
-- `--split` defines which dataset split to evaluate on (`train2014` or `val2014`),
-- `--batch-size` sets the evaluation batch size (if not specified, the value from the training configuration will be used).
+- `--model-dir`: folder containing the trained model,
+- `--split`: dataset split to evaluate (`train2014` or `val2014`),
+- `--batch-size`: evaluation batch size (defaults to training value).
 
-After evaluation, the code will save:
+Outputs:
 
-- a JSON file with the evaluation metrics (accuracy per question type and overall accuracy)
-- a JSON file containing each question ID along with the answer predicted by the model.
+- JSON file with evaluation metrics (per-question type and overall accuracy),
+- JSON file with predicted answers for each question ID.
 
-### 3.5 Inference
+### 4.5 Inference
 
-The script processes the question and image through the selected VQA model and prints the predicted answer to the console.
+Run inference on a single image + question:
 
 ```bash
-python inference.py --model-dir MFBBaseline --question "What is this?" --image-path ...data/vqa_dataset/val2014/COCO_val2014_000000002006.jpg
+python inference.py --model-dir MFBBaseline --question "What is this?" --image-path ./vqa_dataset/val2014/COCO_val2014_000000002006.jpg
 ```
 
-where:
+Arguments:
 
-- `--model-dir` specifies the folder containing the trained model,
-- `--question` is the natural language question to ask about the image,
-- `--image-path` is the path to the image file.
+- `--model-dir`: folder containing the trained model,
+- `--question`: natural language question,
+- `--image-path`: path to the input image.
 
-### 3.6 TFLite Conversion
+### 4.6 TFLite Conversion
 
-The script converts the Keras model to TFLite format, applying per-tensor quantization. The resulting .tflite model is saved in the same folder as the original model.
+Convert a trained Keras model to TensorFlow Lite with per-tensor quantization:
 
 ```bash
 python convert.py --model-dir MFBBaseline
 ```
+
+The .tflite file will be saved in the same folder as the original model.
 
 ---
 
