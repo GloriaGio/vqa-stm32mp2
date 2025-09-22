@@ -161,14 +161,13 @@ Two training modes are supported:
   - cross-entropy (CE) loss with ground truth labels (_y_).
 - **With knowledge distillation (KD)** as described in [Hinton et al., 2015](https://arxiv.org/abs/1503.02531)
   - the loss combines two terms:
-    - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
-    - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
+  <p align="center">
+  <img src="Images/Loss.png" alt="Loss" width="330"/>
+  </p>
+      - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
+      - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
   - **Teacher model:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
   - Parameters: `T = 3`, `α = 0.1`
-
-<p align="center">
-<img src="Images/Loss.png" alt="Loss" width="330"/>
-</p>
 
 **Class imbalance handling:** Since _yes/no_ answers represent ~40% of the dataset, **sample weights** inversely proportional to answer frequency were applied.
 
@@ -198,7 +197,7 @@ The file`train/trainer.py` provides two functions for model training:
 
 Both functions handle validation during training and return a trained model.
 
-The entire training pipeline is handled by `main_train.py`: it loads data and reduces answers, builds custom generators, creates the model, trains from scratch or with KD, and saves the trained model along with preliminary performance.
+The entire training pipeline is handled by `main_train.py`: it loads data and reduces answers (top 1000 most frequent ones), builds custom generators, creates the model, trains from scratch or with KD, and saves the trained model along with preliminary performance.
 
 ### 3.4 Evaluation and Results
 
@@ -210,23 +209,24 @@ The performance of VQA models are evaluated by comparing the model’s predicted
 
 where _N_ is the number of questions and _count(a<sub>i</sub>)_ denotes the number of annotators who provided the answer _a<sub>i</sub>_ to question _i_.
 
+The entire evaluation pipeline is handled by `main_eval.py`: it loads the data and the trained model, obtains model answers, computes accuracy, and saves model answers and performance.
+
 #### VQA Performance (Overall and by Answer Type: Yes/No, Number, and Other)
 
 | Model        | #Params | Overall (%) | Yes/No (%) | Number (%) | Other (%) |
 | ------------ | ------- | ----------- | ---------- | ---------- | --------- |
 | MFB Baseline | 24.4M   | 56.0        | 76.7       | 36.5       | 45.4      |
-| MFB + Att.   | 40.4M   | **57.0**    | **77.7**   | **37.2**   | **46.5**  |
+| MFB + Att.   | 40.4M   | **57.0**    | 77.7       | 37.2       | 46.5      |
 | MFB + CoAtt. | 51.2M   | 56.4        | 76.9       | 36.8       | 46.1      |
 
+Results were obtained using the knowledge distillation (KD) setup with BEiT-3 as teacher (see [Section 3.3](#33-training-procedure)).
 The best-performing model is **MFB + Attention**, which was then deployed on the STM32MP2 platform.
-
-The entire evaluation pipeline is handled by `main_eval.py`: it loads the data and the trained model, obtains model answers, computes accuracy, and saves model answers and performance.
 
 ### 3.5 Deployment Analysis
 
 | Model      | Execution Device | Inference time (ms) | Power (W) |
 | ---------- | ---------------- | ------------------- | --------- |
-| MFB + Att. | GPU/NPU          | **56**              | **0.75**  |
+| MFB + Att. | GPU/NPU          | **56**              | 0.75      |
 | MFB + Att. | CPU              | 434                 | 0.80      |
 
 These results show that **MFB + Attention** runs efficiently on the STM32MP2, with significantly faster execution and lower power consumption when using the GPU/NPU compared to CPU execution.
@@ -425,7 +425,47 @@ The .tflite model will be saved in the same folder as the original model.
 
 ## 5. Configuration and Advanced Options
 
-... (ancora da fare, ignora)
+All training and evaluation settings are stored in the [`config.json`](config.json) file located in the root of the repository.
+This file is divided into three sections: model, training, and paths.
+
+By default, the training scripts load parameters from `config.json`.
+
+➡️ If you start training with the provided configuration file (and use KD as indicated), you will reproduce the same models and results described in this tutorial.
+
+➡️ By editing `config.json`, you can easily experiment with different architectures, hyperparameters, or resources to build your own custom VQA models.
+
+⚠️ Command-line arguments (e.g. `--model-arch`, `--epochs`) will override the corresponding values in `config.json`.
+
+### 5.1 Model Parameters
+
+- `model_architecture`: VQA model architecture. Options: `MFBBaseline`, `MFBAttention`, `MFBCoAttention`.
+- `max_length`: sequence length for tokenized questions (padded or truncated to `max_length`).
+- `num_vocab_words`: size of the question vocabulary. If set to `-1`, vocabulary size is determined by `min_frequency`.
+- `min_frequency`: minimum frequency for a word to be included in the vocabulary (ignored if `num_vocab_words` > 0).
+- `image_size`: input image size (e.g. `224` → `224×224`).
+- `num_channels`: number of image channels (`3` = RGB, `1` = grayscale).
+- `num_classes`: number of possible answers (the model classifies among this set).
+- `consider_teacher`: (`true`/`false`) if `true`, the answer space is built by intersecting the most frequent answers in the training set with those available in the teacher model. The final number of answers is the minimum between `num_classes` and the teacher’s available answers. If `false`, only frequency in the training set is used.
+  - `true` + `knowledge_distillation=true`: train with KD.
+  - `true` + `knowledge_distillation=false`: train from scratch, but on the teacher’s answer space.
+  - `false`: standard training from scratch.
+- `k_window`: hyperparameter _k_ of the MFB module.
+- `output_MFB`: hyperparameter _o_ of the MFB module.
+- `num_attention_glimps`: number of attention glimpses (concatenated after Global Avg Pooling and before MFB module).
+- `use_glove`: (`true`/`false`) whether to combine GloVe embeddings with learned embeddings. **Set to `false` if you don't want to use GloVe embeddings.**
+- `embedding_dim`: dimension of the word embeddings (applies to both GloVe and learned embeddings).
+- `dropout_rate`: dropout rate applied during training.
+
+### 5.2 Training parameters
+
+- `num_epochs`: number of training epochs.
+- `lr`: learning rate.
+- `batch_size`: batch size for training.
+- `alpha`: KD balancing coefficient (α).
+- `temperature`: KD softmax temperature (T).
+- `knowledge_distillation`: (`true`/`false`) whether to use KD during training.
+  - if `consider_teacher=false`, this is automatically disabled.
+- `restore_best_weights`: (`true`/`false`) whether to restore the best model (based on validation loss) or keep the final epoch model.
 
 ---
 
