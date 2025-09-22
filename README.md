@@ -2,25 +2,25 @@
 
 ## 1. Introduction
 
-This repository provides a hands-on tutorial, on how to design, train and evaluate **Visual Question Answering (VQA)** models for **resource-constrained edge devices**, specifically the **STM32MP2 platform**.
+This repository provides a hands-on tutorial that shows you how to design, train, and evaluate **Visual Question Answering (VQA)** models for **resource-constrained edge devices**, specifically the **STM32MP2 platform**.
 
-**VQA** is a task at the intersection of Computer Vision and Natural Language Processing: given an **image** and a **natural language question** about it, the model must generate the correct **answer**. VQA has many real-world applications, such as accessibility tools for visually impaired users and smart assistants that understand visual content. However, most state-of-the-art VQA models are **large and resource-hungry**, making them unsuitable for **edge devices**.
+**VQA** is a task at the intersection of computer vision and natural language processing: given an **image** and a **natural language question** about it, the model must generate the correct **answer**. VQA has many real-world applications, such as accessibility tools for visually impaired users and smart assistants that understand visual content. However, most state-of-the-art VQA models are **large and resource-hungry**, making them unsuitable for **edge devices**.
 
-Models in this tutorial are implemented in **Keras**, optimized for **TensorFlow Lite**, and can leverage the STM32MP2 **NPU** for efficient inference.
+The models in this tutorial are implemented in Keras, optimized for TensorFlow Lite, and designed to leverage the STM32MP2 NPU for efficient inference.
+
+This README is structured as follows:
+
+- [**Section 2**](#2-quickstart): Quickstart (inference in 3 steps)
+- [**Section 3**](#3-tutorial-vqa-on-edge-devices): Tutorial (models, dataset, training and evaluation)
+- [**Section 4**](#4-usage-guide): Usage Guide
+- [**Section 5**](#5-configuration-and-advanced-options): Configuration and Advanced Options
+
+---
 
 ### Requirements
 
 - **Python 3.9**
 - Other dependencies are listed in [`requirements.txt`](./requirements.txt)
-
----
-
-This README is structured as follows:
-
-- [**Section 2**](#2-quickstart): Quickstart
-- [**Section 3**](#3-tutorial-vqa-on-edge-devices): Tutorial (models, dataset, training)
-- [**Section 4**](#4-usage-guide): Usage Guide
-- [**Section 5**](#5-configuration-and-advanced-options): Configuration and Advanced Options
 
 ---
 
@@ -43,10 +43,31 @@ gdown "https://docs.google.com/uc?export=download&id=1UKBwet_hAm7OCmrRjfhFd6aKOc
 unzip outputs/MFBAttention.zip -d outputs/
 ```
 
-3. Run inference on an image
+3. Run inference on a sample image
 
 ```bash
 python inference.py --model-dir MFBAttention --question "What is this?" --image-path ./Images/COCO_val2014_000000002006.jpg
+```
+
+### 2.1 Repository Structure
+
+```
+vqa-stm32mp2/
+├── data/                 # Data loading, preprocessing, and generators
+├── Images/               # Figures for README + sample image for inference
+├── models/               # Model architectures (MFB Baseline, Attention, CoAttention) and GloVe handling
+├── outputs/              # Saved trained models with configs and performance logs
+├── resources/            # External resources (GloVe embeddings and teacher logits)
+├── train/                # Training functions (KD/from scratch, distiller, performance)
+├── utils/                # Configuration management utilities
+├── vqa_dataset/          # Folder for VQAv2 dataset (images, questions, annotations)
+├── config.json           # Model/training configuration file
+├── convert_to_tflite.py  # TFLite conversion script
+├── inference.py          # Script for running inference on an image + question
+├── main_eval.py          # Evaluation entry point
+├── main_train.py         # Training entry point
+├── requirements.txt      # Python dependencies
+└── README.md
 ```
 
 ---
@@ -57,7 +78,7 @@ python inference.py --model-dir MFBAttention --question "What is this?" --image-
 
 The implemented models are based on the architectures proposed by [**Yu et al. (2017)**](https://openaccess.thecvf.com/content_iccv_2017/html/Yu_Multi-Modal_Factorized_Bilinear_ICCV_2017_paper.html): **MFB Baseline**, **MFB + Attention**, **MFB + CoAttention**
 
-The original architectures were modified to make them efficient on the STM32MP2 platform and leverage hardware acceleration (designed for forward CNNs):
+The original architectures were modified to run efficiently on the STM32MP2 platform, taking advantage of hardware acceleration (designed for forward CNNs):
 
 - **ResNet-152 → MobileNet V3 Large**
   - Lighter, optimized for edge devices.
@@ -83,7 +104,7 @@ The folder `models/` contains the file `vqa_models.py`, which defines the implem
 - `MFB_Attention(...)`: Keras implementation of the modified **MFB + Attention** model.
 - `MFB_CoAttention(...)`: Keras implementation of the modified **MFB + CoAttention** model.
 
-Each function returns a fully built **Keras model** (`tf.keras.Model`), with layers and parameters defined according to the provided configuration. While the theoretical section provides a high-level block diagram of the architectures, these functions show the **exact Keras implementation** of each model.
+Each function returns a complete **Keras model** (`tf.keras.Model`), with layers and parameters defined based on the provided configuration. These functions show the **exact Keras implementation** of each model.
 
 ```bash
 from models.vqa_models import MFB_Attention
@@ -93,7 +114,7 @@ model.summary()
 
 ### 3.2 Dataset and Preprocessing
 
-Dataset: **VQAv2 dataset** ([Goyal et al., 2017](https://openaccess.thecvf.com/content_cvpr_2017/html/Goyal_Making_the_v_CVPR_2017_paper.html)). See [Section 4.2](#42-data-setup-and-external-resources). for download from the [VQAv2 official website](https://visualqa.org/download.html).
+**Dataset: VQAv2 dataset ([Goyal et al., 2017](https://openaccess.thecvf.com/content_cvpr_2017/html/Goyal_Making_the_v_CVPR_2017_paper.html)).** See [Section 4.2](#42-data-setup-and-external-resources) for download from the [VQAv2 official website](https://visualqa.org/download.html).
 
 Each sample contains:
 
@@ -101,23 +122,23 @@ Each sample contains:
 - A natural language question
 - Ten human-provided answers + one ground truth answer
 
-| Set        | Questions | Images |
-| ---------- | --------- | ------ |
-| Training   | 443,757   | 82,783 |
-| Validation | 214,354   | 40,504 |
+| Set        | #Questions | #Images |
+| ---------- | ---------- | ------- |
+| Training   | 443,757    | 82,783  |
+| Validation | 214,354    | 40,504  |
 
 Preprocessing:
 
-- Answers: normalized (official guidelines) and reduced to **top 1000 most frequent**.
-  Training set reduced to ~87.5% of original size, and used for training. As a result, the models can only predict one of these 1000 possible answers.
-- Images: Resized to **224×224** and normalized to range **[-1, 1]** (MobileNet input format).
-- Questions: tokenized and padded/truncated to **15 tokens**.
-  Vocabulary: **6415 words** (words appearing ≥5 times).
+- **Answers**: normalized (following the official guidelines) and **reduced to the top 1000 most frequent ones**.
+  - The training set is reduced to ~87.5% of original size and used for model training. As a result, the models can only predict one of these 1000 possible answers.
+- **Images**: Resized to 224×224 and normalized to range [-1, 1] (MobileNet input format).
+- **Questions**: tokenized and padded/truncated to **15 tokens**
+  - Vocabulary: **6415 words** (words appearing ≥5 times).
 
 The folder `data/` contains everything related to dataset handling and preprocessing.
 
-- **Dataset loading**
-  The function `get_vqav2(...)` in `dataset.py` loads the official VQAv2 JSON files into **Pandas DataFrames** and applies **answer normalization**.
+- **Dataset loading.**
+  The function `get_vqav2(...)` in `dataset.py` loads the official VQAv2 JSON files into Pandas DataFrames and applies answer normalization.
 
 ```python
 from data.dataset import get_vqav2
@@ -126,22 +147,89 @@ from pathlib import Path
 split = "train2014" # ("val2014" to get the validation set)
 dataset_path = Path("vqa_dataset")
 df_train = get_vqav2(dataset_path, split=split)
+print(df_train.columns)
 ```
 
-- **Data generators**
-  Defined in `custom_generators.py`. They are implemented as subclasses of `keras.utils.Sequence`, so they can be used directly with `model.fit()`. They handle the entire preprocessing pipeline and supply batches ready for training/evaluation.
+- **Data generators.**
+  Defined in `custom_generators.py`, they are implemented as subclasses of `keras.utils.Sequence`, so they can be used directly with `model.fit()`. They handle the entire preprocessing pipeline and supply batches ready for training/evaluation.
 
 ### 3.3 Training procedure
 
-con o senza KD, con o senza glove. Poi codice per addestrare
+Two training modes are supported:
+
+- **From scratch**
+  - cross-entropy (CE) loss with ground truth labels (_y_).
+- **With knowledge distillation (KD)** as described in [Hinton et al., 2015](https://arxiv.org/abs/1503.02531)
+  - the loss combines two terms:
+    - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
+    - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
+  - **Teacher model:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
+  - Parameters: `T = 3`, `α = 0.1`
+
+<p align="center">
+<img src="Images/Loss.png" alt="Loss" width="330"/>
+</p>
+
+**Class imbalance handling:** Since _yes/no_ answers represent ~40% of the dataset, **sample weights** inversely proportional to answer frequency were applied.
+
+**Training setup:**
+
+- Optimizer: **Adam**, learning rate `1e-4`
+- Epochs: **10** (~1 hour per epoch, ~10 hours total per model on a NVIDIA GeForce GTX 1060 6 GB)
+
+The file`train/trainer.py` provides two functions for model training:
+
+- `train_from_scratch(...)` for training from scatch:
+
+  - Calls `model.compile()` with **Adam optimizer** and **cross-entropy loss**.
+  - Defines Keras callbacks (callbacks can be customized in this file).
+  - Runs `model.fit(...)` and returns the trained model.
+
+- `train_with_KD(...)` for training with KD:
+
+  - Wraps the model inside a custom `Distiller(keras.Model)` class (see [Keras KD Code Examples](https://keras.io/examples/)).
+  - Compiles the distiller with:
+    - Optimizer: **Adam**
+    - Losses: **cross-entropy** (student) + **KL divergence** (distillation)
+    - KD parameters: `alpha` and `T` (from config).
+  - Defines Keras callbacks (callbacks can be customized in this file).
+  - Runs `distiller.fit(...)` to train the student model.
+  - Returns the trained student model.
+
+Both functions handle validation during training and return a trained model.
+
+The entire training pipeline is handled by `main_train.py`: it loads data and reduces answers, builds custom generators, creates the model, trains from scratch or with KD, and saves the trained model along with preliminary performance.
 
 ### 3.4 Evaluation and Results
 
-... (ovviamente noi ottenuti cin KD)
+The performance of VQA models are evaluated by comparing the model’s predicted answers to the human-provided reference answers ([Antol et al., 2015](https://openaccess.thecvf.com/content_iccv_2015/html/Antol_VQA_Visual_Question_ICCV_2015_paper.html)). Given the model’s predicted answer _a<sub>i</sub>_ for question _i_, and the ten human-provided reference answers, the accuracy of a model is computed as follows:
+
+<p align="center">
+<img src="Images/Accuracy.png" alt="Loss" width="330"/>
+</p>
+
+where _N_ is the number of questions and _count(a<sub>i</sub>)_ denotes the number of annotators who provided the answer _a<sub>i</sub>_ to question _i_.
+
+#### VQA Performance (Overall and by Answer Type: Yes/No, Number, and Other)
+
+| Model        | #Params | Overall (%) | Yes/No (%) | Number (%) | Other (%) |
+| ------------ | ------- | ----------- | ---------- | ---------- | --------- |
+| MFB Baseline | 24.4M   | 56.0        | 76.7       | 36.5       | 45.4      |
+| MFB + Att.   | 40.4M   | **57.0**    | **77.7**   | **37.2**   | **46.5**  |
+| MFB + CoAtt. | 51.2M   | 56.4        | 76.9       | 36.8       | 46.1      |
+
+The best-performing model is **MFB + Attention**, which was then deployed on the STM32MP2 platform.
+
+The entire evaluation pipeline is handled by `main_eval.py`: it loads the data and the trained model, obtains model answers, computes accuracy, and saves model answers and performance.
 
 ### 3.5 Deployment Analysis
 
-e TFLite conversion
+| Model      | Execution Device | Inference time (ms) | Power (W) |
+| ---------- | ---------------- | ------------------- | --------- |
+| MFB + Att. | GPU/NPU          | **56**              | **0.75**  |
+| MFB + Att. | CPU              | 434                 | 0.80      |
+
+These results show that **MFB + Attention** runs efficiently on the STM32MP2, with significantly faster execution and lower power consumption when using the GPU/NPU compared to CPU execution.
 
 ---
 
@@ -223,18 +311,18 @@ unzip vqa_dataset/val2014.zip -d vqa_dataset/
 **Final structure**
 
 ```
-vqa_dataset/
-    ├── train2014/
-    ├── val2014/
-    ├── v2_mscoco_train2014_annotations.json
-    ├── v2_mscoco_val2014_annotations.json
-    ├── v2_OpenEnded_mscoco_train2014_questions.json
-    └── v2_OpenEnded_mscoco_val2014_questions.json
+vqa-stm32mp2/vqa_dataset/
+             ├── train2014/
+             ├── val2014/
+             ├── v2_mscoco_train2014_annotations.json
+             ├── v2_mscoco_val2014_annotations.json
+             ├── v2_OpenEnded_mscoco_train2014_questions.json
+             └── v2_OpenEnded_mscoco_val2014_questions.json
 ```
 
 #### 2. GloVe Embeddings
 
-Download GloVe embeddings (i.e., `glove.6B.zip`) from [the official site](https://nlp.stanford.edu/projects/glove/).
+Download GloVe embeddings (i.e., `glove.6B.zip`) from [the official site](https://nlp.stanford.edu/projects/glove/):
 
 ```bash
 wget "https://nlp.stanford.edu/data/glove.6B.zip" -O resources/glove.6B.zip
@@ -250,14 +338,14 @@ Precomputed logits from the BEiT-3 teacher model (or another teacher) are requir
 Expected folder structure:
 
 ```
-resources/teacher_logits/
-    ├── answer2label.txt
-    ├── train_logits/
-    │   ├── question_id.json
-    │   └── ...
-    └── val_logits/
-        ├── question_id.json
-        └── ...
+vqa-stm32mp2/resources/teacher_logits/
+                        ├── answer2label.txt
+                        ├── train_logits/
+                        │   ├── question_id.json
+                        │   └── ...
+                        └── val_logits/
+                            ├── question_id.json
+                            └── ...
 ```
 
 - `answer2label.txt`: maps each possible answer to its index in the teacher’s logits.
@@ -331,13 +419,13 @@ Convert a trained Keras model to TensorFlow Lite with per-tensor quantization:
 python convert.py --model-dir MFBBaseline
 ```
 
-The .tflite file will be saved in the same folder as the original model.
+The .tflite model will be saved in the same folder as the original model.
 
 ---
 
 ## 5. Configuration and Advanced Options
 
-...
+... (ancora da fare, ignora)
 
 ---
 
