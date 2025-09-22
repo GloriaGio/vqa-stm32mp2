@@ -26,7 +26,7 @@ This README is structured as follows:
 
 ## 2. Quickstart
 
-Try inference in 3 steps:
+Try inference in 3 steps with the MFB + Attention pre-trained modelS:
 
 1. Clone the repo and install dependencies
 
@@ -161,13 +161,14 @@ Two training modes are supported:
   - cross-entropy (CE) loss with ground truth labels (_y_).
 - **With knowledge distillation (KD)** as described in [Hinton et al., 2015](https://arxiv.org/abs/1503.02531)
   - the loss combines two terms:
-  <p align="center">
-  <img src="Images/Loss.png" alt="Loss" width="330"/>
-  </p>
-      - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
-      - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
+    - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
+    - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
   - **Teacher model:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
   - Parameters: `T = 3`, `α = 0.1`
+
+<p align="center">
+<img src="Images/Loss.png" alt="Loss" width="330"/>
+</p>
 
 **Class imbalance handling:** Since _yes/no_ answers represent ~40% of the dataset, **sample weights** inversely proportional to answer frequency were applied.
 
@@ -300,7 +301,7 @@ unzip vqa_dataset/v2_Annotations_Val_mscoco.zip -d vqa_dataset/
 
 ```bash
 wget "http://images.cocodataset.org/zips/train2014.zip" -O vqa_dataset/train2014.zip
-unzip vqa_dataset/train2014.zip -d dvqa_dataset/
+unzip vqa_dataset/train2014.zip -d vqa_dataset/
 ```
 
 ```bash
@@ -354,6 +355,8 @@ vqa-stm32mp2/resources/teacher_logits/
 **Optional:** If teacher logits are not available, **you can still train the model from scratch** (see [Section 4.3](#43-training-a-model) or [Section 5](#5-configuration-and-advanced-options)).
 
 ### 4.3 Training a Model
+
+⚠️ Make sure you download the VQAv2 dataset before training.
 
 **With Knowledge Distillation**
 
@@ -452,7 +455,7 @@ By default, the training scripts load parameters from `config.json`.
 - `k_window`: hyperparameter _k_ of the MFB module.
 - `output_MFB`: hyperparameter _o_ of the MFB module.
 - `num_attention_glimps`: number of attention glimpses (concatenated after Global Avg Pooling and before MFB module).
-- `use_glove`: (`true`/`false`) whether to combine GloVe embeddings with learned embeddings. **Set to `false` if you don't want to use GloVe embeddings.**
+- `use_glove`: (`true`/`false`) whether to combine GloVe embeddings with learned embeddings. Set to `false` if you don't want to use GloVe embeddings.
 - `embedding_dim`: dimension of the word embeddings (applies to both GloVe and learned embeddings).
 - `dropout_rate`: dropout rate applied during training.
 
