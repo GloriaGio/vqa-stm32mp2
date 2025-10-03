@@ -78,7 +78,7 @@ vqa-stm32mp2/
 
 The implemented models are based on the architectures proposed by [**Yu et al. (2017)**](https://openaccess.thecvf.com/content_iccv_2017/html/Yu_Multi-Modal_Factorized_Bilinear_ICCV_2017_paper.html): **MFB Baseline**, **MFB + Attention**, **MFB + CoAttention**
 
-The original architectures were modified to run efficiently on the STM32MP2 platform, taking advantage of hardware acceleration (designed for forward CNNs):
+The original architectures were modified to run efficiently on the STM32MP2 platform, taking advantage of its NPU:
 
 - **ResNet-152 → MobileNet V3 Large**
   - Lighter, optimized for edge devices.
