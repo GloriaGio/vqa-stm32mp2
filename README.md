@@ -2,18 +2,19 @@
 
 ## 1. Introduction
 
-This repository provides a hands-on tutorial that shows you how to design, train, and evaluate **Visual Question Answering (VQA)** models for **resource-constrained edge devices**, specifically the **STM32MP2 platform**.
+This repository provides a hands-on tutorial that shows you how to design, train, and evaluate **Visual Question Answering (VQA)** models for **resource-constrained edge devices**, specifically the **STM32MP2 MPU**.
 
 **VQA** is a task at the intersection of computer vision and natural language processing: given an **image** and a **natural language question** about it, the model must generate the correct **answer**. VQA has many real-world applications, such as accessibility tools for visually impaired users and smart assistants that understand visual content. However, most state-of-the-art VQA models are **large and resource-hungry**, making them unsuitable for **edge devices**.
 
-The models in this tutorial are implemented in Keras, optimized for TensorFlow Lite, and designed to leverage the STM32MP2 NPU for efficient inference.
+The models in this tutorial are implemented in Keras 3.9, optimized for TensorFlow Lite, and designed to leverage the STM32MP2 NPU for efficient inference.
 
 This README is structured as follows:
 
 - [**Section 2**](#2-quickstart): Quickstart (inference in 3 steps)
 - [**Section 3**](#3-tutorial-vqa-on-edge-devices): Tutorial (models, dataset, training and evaluation)
 - [**Section 4**](#4-usage-guide): Usage Guide
-- [**Section 5**](#5-configuration-and-advanced-options): Configuration and Advanced Options
+- [**Section 5**](#5-performance-testing-on-stm32mp2): Performance Testing on STM32MP2
+- [**Section 6**](#6-configuration-and-advanced-options): Configuration and Advanced Options
 
 ---
 
@@ -26,14 +27,23 @@ This README is structured as follows:
 
 ## 2. Quickstart
 
-Try inference in 3 steps with the MFB + Attention pre-trained modelS:
+Try inference in 3 steps with the MFB + Attention pre-trained models:
 
 1. Clone the repo and install dependencies
+
+(Optional) create a separate Conda environment:
+
+```bash
+conda create --name tutorialVQAenv python=3.9
+conda activate VQAenv
+pip install --upgrade pip
+```
 
 ```bash
 git clone https://github.com/GloriaGio/vqa-stm32mp2.git
 cd vqa-stm32mp2
 pip install -r requirements.txt
+mkdir vqa_dataset resources
 ```
 
 2. Download a pretrained model (MFB + Attention)
@@ -45,9 +55,19 @@ unzip outputs/MFBAttention.zip -d outputs/
 
 3. Run inference on a sample image
 
+<p align="center">
+<img src="Images/COCO_val2014_000000002006.jpg" alt="SampleImage" width="330"/>
+</p>
+
+_Figure 1. Sample image from the VQAv2 validation set._
+
 ```bash
 python inference.py --model-dir MFBAttention --question "What is this?" --image-path ./Images/COCO_val2014_000000002006.jpg
 ```
+
+- Expected answer: `bus`
+- **Change the question:** replace the text after --question with your own question (for example: `"What color is the vehicle?"` -> `purple`, `"Which country is this?"` -> `england`, `"How many people are there?"` -> `2`).
+- **Change the image:** replace the path after --image-path with the path to your desired image.
 
 ### 2.1 Repository Structure
 
@@ -76,9 +96,9 @@ vqa-stm32mp2/
 
 ### 3.1 Model Architectures
 
-The implemented models are based on the architectures proposed by [**Yu et al. (2017)**](https://openaccess.thecvf.com/content_iccv_2017/html/Yu_Multi-Modal_Factorized_Bilinear_ICCV_2017_paper.html): **MFB Baseline**, **MFB + Attention**, **MFB + CoAttention**
+The implemented models are based on the architectures proposed by [**Yu et al. (2017)**](https://openaccess.thecvf.com/content_iccv_2017/html/Yu_Multi-Modal_Factorized_Bilinear_ICCV_2017_paper.html): **MFB Baseline**, **MFB + Attention**, **MFB + CoAttention**. These models use MFB (Multi-modal Factorized Bilinear pooling) to fuse visual and textual features, exploring different strategies to integrate attention.
 
-The original architectures were modified to run efficiently on the STM32MP2 platform, taking advantage of its NPU:
+The original architectures were modified to run efficiently on the STM32MP2 MPU, taking advantage of its NPU:
 
 - **ResNet-152 → MobileNet V3 Large**
   - Lighter, optimized for edge devices.
@@ -91,12 +111,12 @@ The original architectures were modified to run efficiently on the STM32MP2 plat
 
 Additional improvements:
 
-- **Word embeddings**: concatenation of **pretrained GloVe embeddings** and **learned embeddings**
+- **Word embeddings**: concatenation of **pretrained GloVe embeddings** (Global Vectors for Word Representation, a method to capture semantic meaning of words; [learn more](https://nlp.stanford.edu/projects/glove/)) and **learned embeddings**
   - Introduced to improve semantic representation and boost model performance.
 
 ![MFBCoAttention Architecture](Images/MFBCoAttention.png)
 
-_Figure 2. Optimized **MFB with Co-Attention network**. The **MFB with Attention** and **MFB Baseline** variants are derived by removing, respectively, the question attention block, and both the question and image attention blocks along with the first MFB module._
+_Figure 2. This figure shows the optimized **MFB with Co-Attention network**. The **MFB with Attention** variant is obtained by removing the question attention block from this architecture. The **MFB Baseline** variant is obtained by removing both the question and image attention block and the first MFB module._
 
 The folder `models/` contains the file `vqa_models.py`, which defines the implemented model architectures:
 
@@ -104,12 +124,20 @@ The folder `models/` contains the file `vqa_models.py`, which defines the implem
 - `MFB_Attention(...)`: Keras implementation of the modified **MFB + Attention** model.
 - `MFB_CoAttention(...)`: Keras implementation of the modified **MFB + CoAttention** model.
 
-Each function returns a complete **Keras model** (`tf.keras.Model`), with layers and parameters defined based on the provided configuration. These functions show the **exact Keras implementation** of each model.
+Each function returns a complete **Keras model** (`tf.keras.Model`), with layers and parameters defined based on the provided configuration. These functions show the **exact Keras 3.9 implementation** of each model.
+
+To see the model summary, first start the Python interpreter in your terminal:
 
 ```bash
+python
+```
+
+Then, in the Python prompt, run the following commands:
+
+```python
 from models.vqa_models import MFB_Attention
-model = MFB_Attention()
-model.summary()
+model = MFB_Attention() # Instantiate the model (pretrained MobileNetV3 Large weights will be downloaded and stored in ~/.keras/models)
+model.summary() # Print the model summary
 ```
 
 ### 3.2 Dataset and Preprocessing
@@ -140,14 +168,32 @@ The folder `data/` contains everything related to dataset handling and preproces
 - **Dataset loading.**
   The function `get_vqav2(...)` in `dataset.py` loads the official VQAv2 JSON files into Pandas DataFrames and applies answer normalization.
 
+Before running the code, download the VQAv2 JSON files for training:
+
+```bash
+wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Train_mscoco.zip" -O vqa_dataset/v2_Questions_Train_mscoco.zip
+unzip vqa_dataset/v2_Questions_Train_mscoco.zip -d vqa_dataset/
+wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Train_mscoco.zip" -O vqa_dataset/v2_Annotations_Train_mscoco.zip
+unzip vqa_dataset/v2_Annotations_Train_mscoco.zip -d vqa_dataset/
+```
+
+Then, start the Python interpreter in your terminal
+
+```bash
+python
+```
+
+At the Python prompt, run the following commands:
+
 ```python
 from data.dataset import get_vqav2
 from pathlib import Path
 
-split = "train2014" # ("val2014" to get the validation set)
+
+split = "train2014" # Load the training split
 dataset_path = Path("vqa_dataset")
-df_train = get_vqav2(dataset_path, split=split)
-print(df_train.columns)
+df_train = get_vqav2(dataset_path, split=split) # Load the dataset into a Pandas DataFrame
+print(df_train.columns) # Inspect the DataFrame columns
 ```
 
 - **Data generators.**
@@ -198,7 +244,7 @@ The file`train/trainer.py` provides two functions for model training:
 
 Both functions handle validation during training and return a trained model.
 
-The entire training pipeline is handled by `main_train.py`: it loads data and reduces answers (top 1000 most frequent ones), builds custom generators, creates the model, trains from scratch or with KD, and saves the trained model along with preliminary performance.
+The entire training pipeline is handled by `main_train.py`: it loads data and reduces answers (top 1000 most frequent ones), builds custom generators, creates the model, trains from scratch or with KD, and saves the trained model along with used configuration and preliminary performance.
 
 ### 3.4 Evaluation and Results
 
@@ -221,7 +267,7 @@ The entire evaluation pipeline is handled by `main_eval.py`: it loads the data a
 | MFB + CoAtt. | 51.2M   | 56.4        | 76.9       | 36.8       | 46.1      |
 
 Results were obtained using the knowledge distillation (KD) setup with BEiT-3 as teacher (see [Section 3.3](#33-training-procedure)).
-The best-performing model is **MFB + Attention**, which was then deployed on the STM32MP2 platform.
+The best-performing model is **MFB + Attention**, which was then deployed on the STM32MP2 MPU.
 
 ### 3.5 Deployment Analysis
 
@@ -238,12 +284,21 @@ These results show that **MFB + Attention** runs efficiently on the STM32MP2, wi
 
 ### 4.1 Installation
 
+(Optional) create a separate Conda environment:
+
+```bash
+conda create --name tutorialVQAenv python=3.9
+conda activate VQAenv
+pip install --upgrade pip
+```
+
 Clone the repository and install the required Python packages:
 
 ```bash
 git clone https://github.com/GloriaGio/vqa-stm32mp2.git
 cd vqa-stm32mp2
 pip install -r requirements.txt
+mkdir vqa_dataset resources
 ```
 
 #### Using the provided trained models
@@ -277,9 +332,9 @@ Before running training or evaluation, download and place the required external 
 
 #### 1. VQAv2 Dataset
 
-Download the dataset from the [VQAv2 official website](https://visualqa.org/download.html).
+Download the VQAv2 dataset from the [official website](https://visualqa.org/download.html). The files will be stored in the `vqa_dataset` folder:
 
-**Questions**
+- **Questions** (training and validation):
 
 ```bash
 wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Train_mscoco.zip" -O vqa_dataset/v2_Questions_Train_mscoco.zip
@@ -288,7 +343,7 @@ wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Val_mscoco.zip"
 unzip vqa_dataset/v2_Questions_Val_mscoco.zip -d vqa_dataset/
 ```
 
-**Annotations**
+- **Annotations** (training and validation):
 
 ```bash
 wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Train_mscoco.zip" -O vqa_dataset/v2_Annotations_Train_mscoco.zip
@@ -297,19 +352,23 @@ wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Val_mscoco.zi
 unzip vqa_dataset/v2_Annotations_Val_mscoco.zip -d vqa_dataset/
 ```
 
-**Images**
+- **Images**
+
+⚠️ Training images are large (~13.5 GB)
 
 ```bash
 wget "http://images.cocodataset.org/zips/train2014.zip" -O vqa_dataset/train2014.zip
 unzip vqa_dataset/train2014.zip -d vqa_dataset/
 ```
 
+⚠️ Validation images are large (~6.6 GB)
+
 ```bash
 wget "http://images.cocodataset.org/zips/val2014.zip" -O vqa_dataset/val2014.zip
 unzip vqa_dataset/val2014.zip -d vqa_dataset/
 ```
 
-**Final structure**
+**Folder structure after extraction:**
 
 ```
 vqa-stm32mp2/vqa_dataset/
@@ -323,7 +382,7 @@ vqa-stm32mp2/vqa_dataset/
 
 #### 2. GloVe Embeddings
 
-Download GloVe embeddings (i.e., `glove.6B.zip`) from [the official site](https://nlp.stanford.edu/projects/glove/):
+Download GloVe embeddings (i.e., `glove.6B.zip`) from [the official website](https://nlp.stanford.edu/projects/glove/):
 
 ```bash
 wget "https://nlp.stanford.edu/data/glove.6B.zip" -O resources/glove.6B.zip
@@ -361,27 +420,32 @@ vqa-stm32mp2/resources/teacher_logits/
 **With Knowledge Distillation**
 
 ```bash
-python main_train.py --model-arch MFBBaseline --batch-size 32
+python main_train.py --model-arch MFBBaseline --num-epochs 10 --batch-size 32
 ```
 
 **From scratch**
 
+➡️ Use this command if you do NOT have teacher logits!
+
 ```bash
-python main_train.py --model-arch MFBBaseline --batch-size 32 --disable-KD
+python main_train.py --model-arch MFBBaseline --disable-KD --num-epochs 10  --batch-size 32
 ```
 
 Arguments:
 
 - `--model-arch`: choose the architecture (`MFBBaseline`, `MFBAttention`, or `MFBCoAttention`)
-- `--batch-size`: set the batch size (default: 32).
+- `--num-epochs`: number of training epochs (default: 10)
+- `--batch-size`: batch size for training (default: 32)
 
-After training, a new folder will appear in `outputs/` containing:
+After training, a new folder will appear in `outputs/`. Its name indicates the model architecture used and the date and time when training was started (to avoid overwriting previous runs). The folder contains:
 
 - the trained model (`.keras` format),
 - the training configuration file,
 - JSON file with preliminary performance metrics (training/validation accuracy and loss on filtered dataset).
 
 ### 4.4 Evaluation
+
+⚠️ Make sure you download the VQAv2 dataset before evaluation.
 
 Evaluate a trained model:
 
@@ -416,17 +480,39 @@ Arguments:
 
 ### 4.6 TFLite Conversion
 
+⚠️ Make sure you download the VQAv2 dataset before conversion.
+
 Convert a trained Keras model to TensorFlow Lite with per-tensor quantization:
 
 ```bash
-python convert.py --model-dir MFBBaseline
+python convert_to_tflite.py --model-dir MFBBaseline
 ```
 
 The .tflite model will be saved in the same folder as the original model.
 
 ---
 
-## 5. Configuration and Advanced Options
+## 5. Performance Testing on STM32MP2
+
+You can test and benchmark the trained VQA models on the STM32MP2 MPU via the [ST Edge AI Developer Cloud](https://stedgeai-dc.st.com/home), which lets you execute models on real hardware without needing a physical board.
+
+Steps:
+
+1. Upload your model
+   - Use the `.tflite` model generated in [Section 4.6](#46-tflite-conversion).
+   - Place it in the Developer Cloud workspace and select **Start**.
+2. Select the **STM32 MPUs platform**
+   - Skip the quantization step.
+3. Enable optimization
+   - Select the **Optimize** option to leverage the NPU and improve inference time.
+4. **Start Benchmarking on STM32MP257F-EV1**
+   - Make sure to use the NPU selecting it in advanced setting ⚙️
+   - Record the inference time for your model.
+   - Compare performance using different configurations: NPU, 1 CPU core, 2 CPU cores
+
+---
+
+## 6. Configuration and Advanced Options
 
 All training and evaluation settings are stored in the [`config.json`](config.json) file located in the root of the repository.
 This file is divided into three sections: model, training, and paths.
@@ -439,7 +525,7 @@ By default, the training scripts load parameters from `config.json`.
 
 ⚠️ Command-line arguments (e.g. `--model-arch`, `--epochs`) will override the corresponding values in `config.json`.
 
-### 5.1 Model Parameters
+### 6.1 Model Parameters
 
 - `model_architecture`: VQA model architecture. Options: `MFBBaseline`, `MFBAttention`, `MFBCoAttention`.
 - `max_length`: sequence length for tokenized questions (padded or truncated to `max_length`).
@@ -459,7 +545,7 @@ By default, the training scripts load parameters from `config.json`.
 - `embedding_dim`: dimension of the word embeddings (applies to both GloVe and learned embeddings).
 - `dropout_rate`: dropout rate applied during training.
 
-### 5.2 Training parameters
+### 6.2 Training parameters
 
 - `num_epochs`: number of training epochs.
 - `lr`: learning rate.
