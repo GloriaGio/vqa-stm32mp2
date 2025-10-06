@@ -22,6 +22,9 @@ def get_GloVe_emb(GloVe_folder, dim=50, word_index=None):
             if values[0] in word_index.keys():
                 emb_dict[values[0]] = values[1:]
 
+    if "<unk>" not in emb_dict.keys():
+        emb_dict["<unk>"] = [0] * dim
+
     emb = []
     sorted_wi = sorted(word_index.items(), key=lambda x: x[1])
     for word, i in sorted_wi:

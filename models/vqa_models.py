@@ -35,7 +35,11 @@ def MFB_Baseline(
     )(text_input)
     if glove_emb is not None:
         q_glove_emb = keras.layers.Embedding(
-            input_dim=num_words, output_dim=emb_dim, mask_zero=False, trainable=False
+            input_dim=num_words,
+            output_dim=emb_dim,
+            weights=[glove_emb],
+            mask_zero=False,
+            trainable=False,
         )(text_input)
         q_emb = keras.layers.Concatenate(axis=-1)([q_emb, q_glove_emb])
 
@@ -150,7 +154,11 @@ def MFB_Attention(
     )(text_input)
     if glove_emb is not None:
         q_glove_emb = keras.layers.Embedding(
-            input_dim=num_words, output_dim=emb_dim, mask_zero=False, trainable=False
+            input_dim=num_words,
+            output_dim=emb_dim,
+            weights=[glove_emb],
+            mask_zero=False,
+            trainable=False,
         )(text_input)
         q_emb = keras.layers.Concatenate(axis=-1)([q_emb, q_glove_emb])
 
@@ -303,7 +311,11 @@ def MFB_CoAttention(
     )(text_input)
     if glove_emb is not None:
         q_glove_emb = keras.layers.Embedding(
-            input_dim=num_words, output_dim=emb_dim, mask_zero=False, trainable=False
+            input_dim=num_words,
+            output_dim=emb_dim,
+            weights=[glove_emb],
+            mask_zero=False,
+            trainable=False,
         )(text_input)
         q_emb = keras.layers.Concatenate(axis=-1)([q_emb, q_glove_emb])
 
