@@ -56,7 +56,7 @@ unzip outputs/MFBAttention.zip -d outputs/
 3. Run inference on a sample image
 
 <p align="center">
-<img src="Images/COCO_val2014_000000002006.jpg" alt="SampleImage" width="330"/>
+<img src="Images/COCO_val2014_000000002006.jpg" alt="SampleImage" width="150"/>
 </p>
 
 _Figure 1. Sample image from the VQAv2 validation set._
@@ -498,12 +498,12 @@ You can test and benchmark the trained VQA models on the STM32MP2 MPU via the [S
 
 Steps:
 
-1. Upload your model
+1. **Upload your model**
    - Use the `.tflite` model generated in [Section 4.6](#46-tflite-conversion).
    - Place it in the Developer Cloud workspace and select **Start**.
-2. Select the **STM32 MPUs platform**
+2. **Select the STM32 MPUs platform**
    - Skip the quantization step.
-3. Enable optimization
+3. **Enable optimization**
    - Select the **Optimize** option to leverage the NPU and improve inference time.
 4. **Start Benchmarking on STM32MP257F-EV1**
    - Make sure to use the NPU selecting it in advanced setting ⚙️
