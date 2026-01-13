@@ -22,7 +22,7 @@ This README is structured as follows:
 
 - **Python 3.9**
 - Other dependencies are listed in [`requirements.txt`](./requirements.txt)
-- **GPU support:** for GPU training, install TensorFlow with CUDA following the official guide: [TensorFlow GPU Installation](https://www.tensorflow.org/install/gpu)
+- GPU support: for GPU training, install TensorFlow with CUDA following the official guide: [TensorFlow GPU Installation](https://www.tensorflow.org/install/gpu)
 
 ---
 
@@ -68,7 +68,7 @@ python inference.py --model-dir MFBAttention --question "What is this?" --image-
 
 - Expected answer: `bus`
 - **Change the question:** replace the text after --question with your own question (for example: `"What color is the vehicle?"` -> `purple`, `"Which country is this?"` -> `england`, `"How many people are there?"` -> `2`).
-- **Change the image:** replace the path after --image-path with the path to your desired image ((two additional sample images are provided in the `Images/` folder: `COCO_val2014_000000043816.jpg`, `COCO_val2014_000000527193.jpg`)).
+- **Change the image:** replace the path after --image-path with the path to your desired image (two additional sample images are provided in the `Images/` folder: `COCO_val2014_000000043816.jpg`, `COCO_val2014_000000527193.jpg`).
 
 ### 2.1 Repository Structure
 
@@ -218,7 +218,8 @@ Two training modes are supported:
   - the loss combines two terms:
     - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
     - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
-  - **Teacher model:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
+  - **Teacher model:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224 480x480)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
+    - **Direct download weights:** [beit3_large_indomain_patch16_224](https://github.com/addf400/files/releases/download/beit3/beit3_large_indomain_patch16_480_vqa.pth)
   - Parameters: `T = 3`, `α = 0.1`
 
 <p align="center">
@@ -230,7 +231,7 @@ Two training modes are supported:
 **Training setup:**
 
 - Optimizer: **Adam**, learning rate `1e-4`
-- Epochs: **10** (~1 hour per epoch, ~10 hours total per model on a NVIDIA GeForce GTX 1060 6 GB)
+- Epochs: **10** (~1 hour per epoch, ~10 hours total per model on a NVIDIA GeForce RTX 3060 8 GB)
 
 The file`train/trainer.py` provides two functions for model training:
 
@@ -402,7 +403,7 @@ unzip resources/glove.6B.zip -d resources/glove.6B/
 
 #### 3. Teacher Model Logits (for Knowledge Distillation)
 
-Precomputed logits from the BEiT-3 teacher model (or another teacher) are required if you want to use knowledge distillation (KD).
+Precomputed logits from the BEiT-3 teacher model are required if you want to use knowledge distillation (KD). You can download the precomputed BEiT-3 logits (train + val splits) [here](https://huggingface.co/datasets/danilopau/vqa_teacher_logits/tree/main).
 
 Expected folder structure:
 
