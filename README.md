@@ -22,6 +22,7 @@ This README is structured as follows:
 
 - **Python 3.9**
 - Other dependencies are listed in [`requirements.txt`](./requirements.txt)
+- **GPU support:** for GPU training, install TensorFlow with CUDA following the official guide: [TensorFlow GPU Installation](https://www.tensorflow.org/install/gpu)
 
 ---
 
@@ -35,7 +36,7 @@ Try inference in 3 steps with the MFB + Attention pre-trained models:
 
 ```bash
 conda create --name tutorialVQAenv python=3.9
-conda activate VQAenv
+conda activate tutorialVQAenv
 pip install --upgrade pip
 ```
 
@@ -67,7 +68,7 @@ python inference.py --model-dir MFBAttention --question "What is this?" --image-
 
 - Expected answer: `bus`
 - **Change the question:** replace the text after --question with your own question (for example: `"What color is the vehicle?"` -> `purple`, `"Which country is this?"` -> `england`, `"How many people are there?"` -> `2`).
-- **Change the image:** replace the path after --image-path with the path to your desired image.
+- **Change the image:** replace the path after --image-path with the path to your desired image ((two additional sample images are provided in the `Images/` folder: `COCO_val2014_000000043816.jpg`, `COCO_val2014_000000527193.jpg`)).
 
 ### 2.1 Repository Structure
 
@@ -135,9 +136,17 @@ python
 Then, in the Python prompt, run the following commands:
 
 ```python
+import sys
 from models.vqa_models import MFB_Attention
+
 model = MFB_Attention() # Instantiate the model (pretrained MobileNetV3 Large weights will be downloaded and stored in ~/.keras/models)
-model.summary() # Print the model summary
+
+# Save the model summary to a text file
+with open('model_summary.txt', 'w') as f:
+  original_stdout = sys.stdout
+  sys.stdout = f
+  model.summary()
+  sys.stdout = original_stdout
 ```
 
 ### 3.2 Dataset and Preprocessing
@@ -337,18 +346,18 @@ Download the VQAv2 dataset from the [official website](https://visualqa.org/down
 - **Questions** (training and validation):
 
 ```bash
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Train_mscoco.zip" -O vqa_dataset/v2_Questions_Train_mscoco.zip
+curl -L "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Train_mscoco.zip" -o vqa_dataset/v2_Questions_Train_mscoco.zip
 unzip vqa_dataset/v2_Questions_Train_mscoco.zip -d vqa_dataset/
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Val_mscoco.zip" -O vqa_dataset/v2_Questions_Val_mscoco.zip
+curl -L "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Questions_Val_mscoco.zip" -o vqa_dataset/v2_Questions_Val_mscoco.zip
 unzip vqa_dataset/v2_Questions_Val_mscoco.zip -d vqa_dataset/
 ```
 
 - **Annotations** (training and validation):
 
 ```bash
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Train_mscoco.zip" -O vqa_dataset/v2_Annotations_Train_mscoco.zip
+curl -L "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Train_mscoco.zip" -o vqa_dataset/v2_Annotations_Train_mscoco.zip
 unzip vqa_dataset/v2_Annotations_Train_mscoco.zip -d vqa_dataset/
-wget "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Val_mscoco.zip" -O vqa_dataset/v2_Annotations_Val_mscoco.zip
+curl -L "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_Annotations_Val_mscoco.zip" -o vqa_dataset/v2_Annotations_Val_mscoco.zip
 unzip vqa_dataset/v2_Annotations_Val_mscoco.zip -d vqa_dataset/
 ```
 
@@ -357,14 +366,14 @@ unzip vqa_dataset/v2_Annotations_Val_mscoco.zip -d vqa_dataset/
 ⚠️ Training images are large (~13.5 GB)
 
 ```bash
-wget "http://images.cocodataset.org/zips/train2014.zip" -O vqa_dataset/train2014.zip
+curl -L "http://images.cocodataset.org/zips/train2014.zip" -o vqa_dataset/train2014.zip
 unzip vqa_dataset/train2014.zip -d vqa_dataset/
 ```
 
 ⚠️ Validation images are large (~6.6 GB)
 
 ```bash
-wget "http://images.cocodataset.org/zips/val2014.zip" -O vqa_dataset/val2014.zip
+curl -L "http://images.cocodataset.org/zips/val2014.zip" -o vqa_dataset/val2014.zip
 unzip vqa_dataset/val2014.zip -d vqa_dataset/
 ```
 
@@ -389,7 +398,7 @@ wget "https://nlp.stanford.edu/data/glove.6B.zip" -O resources/glove.6B.zip
 unzip resources/glove.6B.zip -d resources/glove.6B/
 ```
 
-**Optional:** you can still train without GloVe embeddings by adjusting the configuration file (see [Section 5](#5-configuration-and-advanced-options)).
+**Optional:** you can still train without GloVe embeddings by adjusting the configuration file (see [Section 6](#6-configuration-and-advanced-options)).
 
 #### 3. Teacher Model Logits (for Knowledge Distillation)
 
@@ -411,7 +420,7 @@ vqa-stm32mp2/resources/teacher_logits/
 - `answer2label.txt`: maps each possible answer to its index in the teacher’s logits.
 - Each `question_id.json`: contains question metadata and a `logits` key with the teacher model outputs.
 
-**Optional:** If teacher logits are not available, **you can still train the model from scratch** (see [Section 4.3](#43-training-a-model) or [Section 5](#5-configuration-and-advanced-options)).
+**Optional:** If teacher logits are not available, **you can still train the model from scratch** (see [Section 4.3](#43-training-a-model) or [Section 6](#6-configuration-and-advanced-options)).
 
 ### 4.3 Training a Model
 
