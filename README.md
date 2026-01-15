@@ -79,6 +79,7 @@ vqa-stm32mp2/
 ├── models/               # Model architectures (MFB Baseline, Attention, CoAttention) and GloVe handling
 ├── outputs/              # Saved trained models with configs and performance logs
 ├── resources/            # External resources (GloVe embeddings and teacher logits)
+├── teacher_logits_generation/ # Reference code and instructions to generate BEiT-3 teacher logits
 ├── train/                # Training functions (KD/from scratch, distiller, performance)
 ├── utils/                # Configuration management utilities
 ├── vqa_dataset/          # Folder for VQAv2 dataset (images, questions, annotations)
@@ -219,7 +220,6 @@ Two training modes are supported:
     - **Student loss**: cross-entropy (CE) with ground truth labels (_y_).
     - **Distillation loss**: Kullback–Leibler (KL) divergence between teacher logits (_t_) and student logits (_s_).
   - **Teacher model:** BEiT-3 ([Wang et al., 2023](https://openaccess.thecvf.com/content/CVPR2023/html/Wang_Image_as_a_Foreign_Language_BEiT_Pretraining_for_Vision_and_CVPR_2023_paper.html)) fine-tuned on VQAv2 [(beit3_large_indomain_patch16_224 480x480)](https://github.com/microsoft/unilm/tree/master/beit3#fine-tuning-on-vqav2-visual-question-answering) (82.53% accuracy on test-dev, 683M parameters).
-    - **Direct download weights:** [beit3_large_indomain_patch16_224](https://github.com/addf400/files/releases/download/beit3/beit3_large_indomain_patch16_480_vqa.pth)
   - Parameters: `T = 3`, `α = 0.1`
 
 <p align="center">
@@ -403,7 +403,12 @@ unzip resources/glove.6B.zip -d resources/glove.6B/
 
 #### 3. Teacher Model Logits (for Knowledge Distillation)
 
-Precomputed logits from the BEiT-3 teacher model are required if you want to use knowledge distillation (KD). You can download the precomputed BEiT-3 logits (train + val splits) [here](https://huggingface.co/datasets/danilopau/vqa_teacher_logits/tree/main).
+Precomputed logits from the BEiT-3 teacher model are required if you want to use knowledge distillation (KD).
+
+You can download the precomputed BEiT-3 logits (train + val splits) [here](https://huggingface.co/datasets/danilopau/vqa_teacher_logits/tree/main).
+Alternatively, instructions and reference code to **regenerate the teacher logits** using the BEiT-3 model are provided in the [`teacher_logits_generation/`](./teacher_logits_generation) folder.
+
+- **Direct teacher weights download:** [beit3_large_indomain_patch16_224 480x480](https://github.com/addf400/files/releases/download/beit3/beit3_large_indomain_patch16_480_vqa.pth)
 
 Expected folder structure:
 
