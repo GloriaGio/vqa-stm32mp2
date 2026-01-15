@@ -392,6 +392,8 @@ vqa-stm32mp2/vqa_dataset/
 
 #### 2. GloVe Embeddings
 
+**Optional:** you can still train without GloVe embeddings by adjusting the configuration file (see [Section 6](#6-configuration-and-advanced-options)).
+
 Download GloVe embeddings (i.e., `glove.6B.zip`) from [the official website](https://nlp.stanford.edu/projects/glove/):
 
 ```bash
@@ -399,9 +401,9 @@ wget "https://nlp.stanford.edu/data/glove.6B.zip" -O resources/glove.6B.zip
 unzip resources/glove.6B.zip -d resources/glove.6B/
 ```
 
-**Optional:** you can still train without GloVe embeddings by adjusting the configuration file (see [Section 6](#6-configuration-and-advanced-options)).
-
 #### 3. Teacher Model Logits (for Knowledge Distillation)
+
+**Optional:** If teacher logits are not available, **you can still train the model from scratch** (see [Section 4.3](#43-training-a-model) or [Section 6](#6-configuration-and-advanced-options)).
 
 Precomputed logits from the BEiT-3 teacher model are required if you want to use knowledge distillation (KD).
 
@@ -425,8 +427,6 @@ vqa-stm32mp2/resources/teacher_logits/
 
 - `answer2label.txt`: maps each possible answer to its index in the teacher’s logits.
 - Each `question_id.json`: contains question metadata and a `logits` key with the teacher model outputs.
-
-**Optional:** If teacher logits are not available, **you can still train the model from scratch** (see [Section 4.3](#43-training-a-model) or [Section 6](#6-configuration-and-advanced-options)).
 
 ### 4.3 Training a Model
 
