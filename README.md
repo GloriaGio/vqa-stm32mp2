@@ -26,6 +26,10 @@ This README is structured as follows:
 
 ---
 
+### EdgeAI San Diego 2026
+
+📄 The presentation from Edge AI San Diego 2026 is available here: [VQA Workshop EdgeAI SD 2026](https://github.com/GloriaGio/vqa-stm32mp2/blob/main/EdgeAI%20San%20Diego%202026/VQA%20Workshop%20EdgeAI%20SD%202026.pdf)
+
 ## 2. Quickstart
 
 Try inference in 3 steps with the MFB + Attention pre-trained models:
